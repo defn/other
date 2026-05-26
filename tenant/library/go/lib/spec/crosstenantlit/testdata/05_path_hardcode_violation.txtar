@@ -1,0 +1,19 @@
+# Leaf 'spiral' references the path 'tenant/defn' as a string literal:
+# AIDR-00102 violation (rule 1, path-prefixed name).
+
+! exec crosstenantlit input.json
+stdout 'tenant/spiral/x\.cue:1 contains forbidden literal "tenant/defn"'
+stdout 'owned by tenant "defn"'
+stdout 'kind=name'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": []}
+  ],
+  "files": [
+    {"path": "tenant/spiral/x.cue", "tenant": "spiral", "content": "neighbor: \"tenant/defn\"\n"}
+  ],
+  "gen_writes": []
+}

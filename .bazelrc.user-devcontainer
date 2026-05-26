@@ -1,0 +1,7 @@
+# Devcontainer-specific Bazel user configuration.
+#
+# Remote cache: bazel-remote sidecar on 127.0.0.1:8080 (HTTP).
+# Repository cache: dedicated volume mount for downloaded external repos.
+
+build --remote_cache=http://127.0.0.1:8080
+build --repository_cache=/home/ubuntu/.cache/bazel-repo

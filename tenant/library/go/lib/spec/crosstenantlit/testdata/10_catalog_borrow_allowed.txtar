@@ -1,0 +1,18 @@
+# tenant/spiral/catalog/auth.cue is the GRAFT borrow surface -- the
+# one place spiral may name another leaf's profile. The same literal
+# elsewhere in spiral's tree would still violate.
+
+exec crosstenantlit input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": ["defn-org"]}
+  ],
+  "files": [
+    {"path": "tenant/spiral/catalog/auth.cue", "tenant": "spiral", "content": "auth: { tofu: \"defn-org\" }\n"}
+  ],
+  "gen_writes": []
+}

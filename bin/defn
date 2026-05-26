@@ -1,0 +1,23 @@
+#!/usr/bin/env bbs
+;; bin/defn -- freshness-guaranteed shim that delegates to
+;; `mise run defn`, which rebuilds via bazel before exec-ing.
+;;
+;; Background:
+;; This path used to be a 138MB compiled binary, kept up-to-date
+;; only when someone remembered to run `mise run build-go`.
+;; That manual step let the artifact silently fall behind source
+;; (twice during AIDR-00135 development the stale binary masked
+;; a real behavior change for hours).
+;;
+;; The shim is babashka per AIREF-00011 (no plain bash scripts).
+;; Bazel's incremental cache keeps the no-op rebuild path sub-
+;; second, so the freshness guarantee is effectively free.
+;;
+;; Args flow through to the CLI verbatim:
+;;   bin/defn dispatch --bricks=app--keda --worktree ...
+;; is equivalent to
+;;   mise run defn -- dispatch --bricks=app--keda --worktree ...
+
+(require '[babashka.process :as p])
+
+(p/exec (into ["mise" "run" "defn" "--"] *command-line-args*))

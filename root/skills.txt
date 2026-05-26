@@ -1,0 +1,25 @@
+Forked skills under m/root/skills/
+
+Source:   https://github.com/obra/superpowers
+Commit:   6efe32c9e2dd002d0c394e861e0529675d1ab32e
+License:  MIT (Copyright (c) 2025 Jesse Vincent) -- see m/root/skills/obra--superpowers-LICENSE.txt
+
+The following skill directories under m/root/skills/ were forked from
+the upstream commit above. Each was renamed with an sp- prefix and had
+internal cross-references updated to match. The contents are otherwise
+derivative of upstream and remain under the upstream MIT license.
+
+  sp-brainstorming                   <- brainstorming
+  sp-dispatching-parallel-agents     <- dispatching-parallel-agents
+  sp-executing-plans                 <- executing-plans
+  sp-finishing-a-development-branch  <- finishing-a-development-branch
+  sp-receiving-code-review           <- receiving-code-review
+  sp-requesting-code-review          <- requesting-code-review
+  sp-subagent-driven-development     <- subagent-driven-development
+  sp-systematic-debugging            <- systematic-debugging
+  sp-test-driven-development         <- test-driven-development
+  sp-using-git-worktrees             <- using-git-worktrees
+  sp-using-superpowers               <- using-superpowers
+  sp-verification-before-completion  <- verification-before-completion
+  sp-writing-plans                   <- writing-plans
+  sp-writing-skills                  <- writing-skills

@@ -1,0 +1,21 @@
+# Parent + child brick: child's reads include a path that the
+# parent's writes (transitively, via path-prefix attribution per
+# AIDR-00097) cover. The coordinator never dispatches parent +
+# descendant in parallel, so this is not a sibling-staleness signal.
+# The check skips ancestor pairs in either direction (mirrors
+# brickcollision's ancestor-skip rule).
+
+exec brickreads input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "fmt": {"path": "kernel/fmt"},
+    "fmt-bazel": {"path": "kernel/fmt/bazel"}
+  },
+  "brick_io": {
+    "fmt": {"reads": ["kernel/fmt/bazel/formatter.cue"], "writes": ["kernel/fmt/BUILD.bazel", "kernel/fmt/bazel/BUILD.bazel"]},
+    "fmt-bazel": {"reads": ["kernel/fmt/BUILD.bazel"], "writes": ["kernel/fmt/bazel/BUILD.bazel"]}
+  }
+}

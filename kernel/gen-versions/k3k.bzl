@@ -1,0 +1,4 @@
+# Generated from schema/versions.cue -- DO NOT EDIT.
+K3K_VERSION = "v1.1.0-rc6"
+K3K_CHART_VERSION = "1.1.0"
+K3K_CHART_SHA256 = "251653c68d9ba40e7726d728877198f96e915451b9fc8d7e0f6d036bb19882cd"

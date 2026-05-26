@@ -1,0 +1,24 @@
+# Mixed scenario: parent (root), descendant (root/child), and a
+# non-ancestor sibling (other). All three claim the same path.
+# Expected behavior: the root__child pair is skipped (ancestor),
+# but root__other and child__other are real hazards.
+
+! exec brickcollision input.json
+stdout '^child__other collide on: shared\.cue$'
+stdout '^other__root collide on: shared\.cue$'
+! stdout 'child__root'
+! stdout 'root__child'
+
+-- input.json --
+{
+  "bricks": {
+    "root": {"path": "p/r"},
+    "child": {"path": "p/r/c"},
+    "other": {"path": "q/o"}
+  },
+  "brick_io": {
+    "root": {"writes": ["shared.cue"]},
+    "child": {"writes": ["shared.cue"]},
+    "other": {"writes": ["shared.cue"]}
+  }
+}

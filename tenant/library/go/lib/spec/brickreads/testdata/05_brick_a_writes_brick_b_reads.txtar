@@ -1,0 +1,19 @@
+# Same shape as 04 but expressed from the other direction: B reads a
+# path that A writes. B is stale relative to A. Reads and writes are
+# directional, so the finding is keyed on (B reads, A writes), not the
+# transposed version.
+
+! exec brickreads input.json
+stdout '^b stale on a: shared/x\.cue$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"}
+  },
+  "brick_io": {
+    "a": {"reads": ["foo/in.cue"], "writes": ["shared/x.cue"]},
+    "b": {"reads": ["shared/x.cue"], "writes": ["bar/out.cue"]}
+  }
+}

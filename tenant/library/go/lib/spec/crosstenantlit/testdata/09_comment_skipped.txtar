@@ -1,0 +1,19 @@
+# Comment-only matches are allowed (mirrors SPEC-00351). The
+# leading-whitespace comment markers //, #, and ;; all bypass the
+# scan; the bare match on the active line still fires.
+
+! exec crosstenantlit input.json
+stdout 'tenant/spiral/x\.cue:5 contains forbidden literal "defn-org"'
+! stdout 'tenant/spiral/x\.cue:[1234] '
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": []}
+  ],
+  "files": [
+    {"path": "tenant/spiral/x.cue", "tenant": "spiral", "content": "// note: \"defn-org\" appears below\n# also \"defn-org\" mentioned\n;; clojure-style \"defn-org\"\n   // indented comment with \"defn-org\"\nthing: \"defn-org\"\n"}
+  ],
+  "gen_writes": []
+}

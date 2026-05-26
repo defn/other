@@ -1,0 +1,52 @@
+"""Starship prompt configuration."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+exports_files(["starship.toml"])
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "starship_toml_fmt",
+    src = "starship.toml",
+    tool = "taplo",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "starship_toml_tag",
+    src = "starship.toml",
+    tags = [
+        "config",
+        "starship",
+        "toml",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

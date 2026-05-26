@@ -1,0 +1,19 @@
+# .zsh-entrypoint -- Devcontainer zsh entrypoint.
+#
+# This file is the controlled entrypoint for zsh in the devcontainer.
+# It is loaded via the ZDOTDIR chain:
+#
+#   devcontainer.json sets ZDOTDIR=/home/ubuntu/m/.devcontainer
+#   → .devcontainer/.zshrc sources this file
+#   → this file sources the standard zsh config files
+#
+# NOTE: The ZDOTDIR approach is necessary because zsh has no --init-file
+# equivalent. ZDOTDIR redirects where zsh looks for .zshrc, giving us
+# a single point of control before the standard configs load.
+
+export HISTSIZE=100000
+export SAVEHIST=100000
+
+[[ -f "$HOME/.zshenv" ]] && source "$HOME/.zshenv"
+[[ -f "$HOME/.zprofile" ]] && source "$HOME/.zprofile"
+[[ -f "$HOME/.zshrc" ]] && source "$HOME/.zshrc"

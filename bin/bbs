@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# bbs - babashka shebang wrapper with reader macro support
+#
+# Usage as shebang: #!/usr/bin/env bbs
+#
+# Features:
+#   - Adds m/lib/ to classpath for shared libraries
+#   - Supports #MISE reader tag for mise task annotations
+#   - Resolves lib/ via git (preferred) or relative to own location (Bazel sandbox)
+set -euo pipefail
+
+SCRIPT="${1:-}"
+if [[ -z "$SCRIPT" ]]; then
+	exec bb "$@"
+fi
+shift
+
+# Resolve lib dir in order of preference:
+# 1. BBS_LIB env var (set by Bazel BUILD files for sandbox)
+# 2. git repo relative path (normal dev usage)
+# 3. relative to this script's location (fallback)
+if [[ -n "${BBS_LIB:-}" ]]; then
+	# BBS_LIB can point to a file (e.g. Bazel rootpath) or a directory.
+	if [[ -d "$BBS_LIB" ]]; then
+		LIB_DIR="$BBS_LIB"
+	else
+		LIB_DIR="$(dirname "$BBS_LIB")"
+	fi
+elif git rev-parse --show-cdup >/dev/null 2>&1; then
+	CDUP="$(git rev-parse --show-cdup)"
+	LIB_DIR="${CDUP}m/kernel/lib"
+else
+	SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+	LIB_DIR="${SELF_DIR}/../kernel/lib"
+fi
+
+exec bb -cp "${LIB_DIR}" \
+	-e "(set! *data-readers* {'MISE (constantly nil)}) (load-file \"${SCRIPT}\")" \
+	-- "$@"

@@ -1,0 +1,17 @@
+# A's reads intersect B's writes on multiple paths. One Stale entry
+# with multiple sorted Paths.
+
+! exec brickreads input.json
+stdout '^a stale on b: shared/x\.cue, shared/y\.cue$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"}
+  },
+  "brick_io": {
+    "a": {"reads": ["shared/y.cue", "shared/x.cue"], "writes": ["foo/out.cue"]},
+    "b": {"reads": [], "writes": ["shared/x.cue", "shared/y.cue", "shared/z.cue"]}
+  }
+}

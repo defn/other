@@ -1,0 +1,96 @@
+"""Formatting mise tasks -- brick-specific tasks for the fmt kit."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+exports_files(glob(["*.clj"]))
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "fmt_check_fmt",
+    src = "fmt-check.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "fmt_cljstyle_fmt",
+    src = "fmt-cljstyle.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "fmt_google_java_format_fmt",
+    src = "fmt-google-java-format.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "fmt_exec_check_fmt",
+    src = "fmt-exec-check.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "fmt_check_task",
+    src = "fmt-check.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "fmt_cljstyle_task",
+    src = "fmt-cljstyle.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "fmt_exec_check_task",
+    src = "fmt-exec-check.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "fmt_google_java_format_task",
+    src = "fmt-google-java-format.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

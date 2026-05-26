@@ -1,0 +1,21 @@
+# Multiple distinct colliding pairs: emit one line per pair, sorted.
+
+! exec brickcollision input.json
+stdout '^a__b collide on: shared-ab\.cue$'
+stdout '^c__d collide on: shared-cd\.cue$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "p/a"},
+    "b": {"path": "p/b"},
+    "c": {"path": "p/c"},
+    "d": {"path": "p/d"}
+  },
+  "brick_io": {
+    "a": {"writes": ["shared-ab.cue"]},
+    "b": {"writes": ["shared-ab.cue"]},
+    "c": {"writes": ["shared-cd.cue"]},
+    "d": {"writes": ["shared-cd.cue"]}
+  }
+}

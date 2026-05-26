@@ -1,0 +1,102 @@
+"""Packer AMI 'coder' -- EC2 base image for Coder workspaces."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+exports_files([
+    "coder.pkr.hcl",
+    "install-ec2.sh",
+    "install-packer.sh",
+    "mise.toml",
+])
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "coder_pkr_hcl_fmt",
+    src = "coder.pkr.hcl",
+    tool = "packer",
+)
+
+fmt_test(
+    name = "mise_toml_fmt",
+    src = "mise.toml",
+    tool = "taplo",
+)
+
+fmt_test(
+    name = "install_ec2_sh_fmt",
+    src = "install-ec2.sh",
+    tool = "shfmt",
+)
+
+fmt_test(
+    name = "install_packer_sh_fmt",
+    src = "install-packer.sh",
+    tool = "shfmt",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "coder_pkr_hcl_tag",
+    src = "coder.pkr.hcl",
+    tags = [
+        "config",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "install_ec2_sh_tag",
+    src = "install-ec2.sh",
+    tags = [
+        "generated",
+        "shell",
+    ],
+)
+
+tagged_file(
+    name = "install_packer_sh_tag",
+    src = "install-packer.sh",
+    tags = [
+        "script",
+        "shell",
+    ],
+)
+
+tagged_file(
+    name = "mise_toml_tag",
+    src = "mise.toml",
+    tags = [
+        "config",
+        "generated",
+        "toml",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

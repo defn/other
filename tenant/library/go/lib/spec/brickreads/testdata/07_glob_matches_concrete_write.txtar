@@ -1,0 +1,18 @@
+# A reads a glob `shared/*.cue` that matches a concrete path B writes.
+# The Stale entry's Paths carries the concrete sibling-write path, not
+# the glob.
+
+! exec brickreads input.json
+stdout '^a stale on b: shared/x\.cue$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"}
+  },
+  "brick_io": {
+    "a": {"reads": ["shared/*.cue"], "writes": ["foo/out.cue"]},
+    "b": {"reads": ["bar/in.cue"], "writes": ["shared/x.cue"]}
+  }
+}

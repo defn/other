@@ -1,0 +1,10 @@
+@experiment(aliasv2,explicitopen,shortcircuit,try)
+
+package deps
+
+deps: [
+	"//tenant/library/go/lib/gen",
+	"//tenant/library/go/lib/gen/golib",
+	"@org_cuelang_go//cue",
+	"@org_cuelang_go//cue/cuecontext",
+]

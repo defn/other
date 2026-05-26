@@ -1,0 +1,48 @@
+# Coordinator dispatch protocol schema (AIDR-00132). Hand-edited
+# substrate; importable as
+# github.com/defn/other/kernel/spec/dispatch.
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+exports_files(["dispatch_plan.cue"])
+
+# AIDR-00132 OQ7 step 2: per-brick dispatch.cue files (emitted by
+# go/lib/gen/dispatchworker) import this package. Sandboxes
+# that stage kernel/schema/* (which now includes a dispatch.cue)
+# need this filegroup so the imports resolve.
+filegroup(
+    name = "dispatch_files",
+    srcs = glob(["*.cue"]),
+    visibility = ["//kernel/spec:__pkg__"],
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "dispatch_plan_cue_fmt",
+    src = "dispatch_plan.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "dispatch_plan_cue_tag",
+    src = "dispatch_plan.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)

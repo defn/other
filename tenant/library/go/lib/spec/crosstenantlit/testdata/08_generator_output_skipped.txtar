@@ -1,0 +1,18 @@
+# A generator-output path (in gen_writes) hardcoding "defn-org" is
+# skipped: it's a derivation of catalog state, not a hardcode (per
+# AIDR-00097 path-prefix attribution).
+
+exec crosstenantlit input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": []}
+  ],
+  "files": [
+    {"path": "tenant/spiral/k3d/x/main.tf", "tenant": "spiral", "content": "profile = \"defn-org\"\n"}
+  ],
+  "gen_writes": ["tenant/spiral/k3d/x/main.tf"]
+}

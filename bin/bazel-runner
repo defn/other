@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# bazel-runner -- run bazelisk with a normalized environment to preserve
+# the Bazel analysis cache across tool version changes.
+#
+# Bazel's server hashes the client environment to decide whether to reuse
+# the analysis cache. Mise activates versioned tool paths (e.g.,
+# .../installs/go/1.26.2/bin) which change on every upgrade, invalidating
+# the cache even when the build graph is identical.
+#
+# This wrapper strips the environment down to a stable minimum before
+# invoking bazelisk, so the analysis cache survives tool upgrades.
+set -euo pipefail
+
+# Stable PATH: m/bin (for bbs shebang), mise shims (version-independent
+# tool resolution), and system paths. No versioned tool directories.
+STABLE_PATH="/home/ubuntu/m/bin:/home/ubuntu/.local/share/mise/shims:/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin"
+
+# Resolve bazelisk binary via mise shims (stable path, not versioned)
+BAZELISK="/home/ubuntu/.local/share/mise/shims/bazelisk"
+
+# Run bazelisk with a minimal, stable environment.
+# Only pass vars that Bazel or its toolchains actually need.
+exec env -i \
+	HOME="/home/ubuntu" \
+	USER="${USER:-ubuntu}" \
+	PATH="$STABLE_PATH" \
+	TERM="${TERM:-xterm-256color}" \
+	"$BAZELISK" "$@"

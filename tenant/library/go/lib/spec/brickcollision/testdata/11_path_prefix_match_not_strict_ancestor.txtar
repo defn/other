@@ -1,0 +1,20 @@
+# Subtle case: brick paths that share a string prefix but are not
+# strict ancestors. "kernel/fmt" and "kernel/fmtbazel" both start
+# with "kernel/fmt" but the latter is NOT a child of the former
+# (no "/" after "fmt"). They're disjoint dirs at the filesystem
+# level, so a shared write SHOULD be flagged.
+
+! exec brickcollision input.json
+stdout '^fmt__fmtbazel collide on: contested\.cue$'
+
+-- input.json --
+{
+  "bricks": {
+    "fmt": {"path": "kernel/fmt"},
+    "fmtbazel": {"path": "kernel/fmtbazel"}
+  },
+  "brick_io": {
+    "fmt": {"writes": ["contested.cue"]},
+    "fmtbazel": {"writes": ["contested.cue"]}
+  }
+}

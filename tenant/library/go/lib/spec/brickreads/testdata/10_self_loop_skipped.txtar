@@ -1,0 +1,16 @@
+# A brick that reads paths it itself writes is not stale -- a brick's
+# own writes are not a sibling-staleness signal. The check skips
+# slug == sibling.
+
+exec brickreads input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"}
+  },
+  "brick_io": {
+    "a": {"reads": ["foo/in.cue", "foo/out.cue"], "writes": ["foo/out.cue"]}
+  }
+}

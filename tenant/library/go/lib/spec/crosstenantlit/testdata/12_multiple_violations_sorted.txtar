@@ -1,0 +1,18 @@
+# Multiple violations across files sort by (Path, Line, Literal).
+
+! exec crosstenantlit input.json
+stdout 'tenant/spiral/a\.cue:2 contains forbidden literal "defn-org"'
+stdout 'tenant/spiral/b\.cue:1 contains forbidden literal "tenant/defn"'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": []}
+  ],
+  "files": [
+    {"path": "tenant/spiral/b.cue", "tenant": "spiral", "content": "n: \"tenant/defn\"\n"},
+    {"path": "tenant/spiral/a.cue", "tenant": "spiral", "content": "ok: 1\np: \"defn-org\"\n"}
+  ],
+  "gen_writes": []
+}

@@ -1,0 +1,23 @@
+"""tenant/library/env/ -- environment definitions owned by this tenant.
+
+Empty here is legal; per-env subdirs (e.g. env/versions/) are
+hand-authored when the tenant adopts environment tracking.
+"""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)

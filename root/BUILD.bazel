@@ -1,0 +1,147 @@
+"""Project root files -- symlinked from $HOME for CUE/Bazel/formatter coverage."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+exports_files([
+    ".bash_entrypoint",
+    ".bazelrc",
+    ".zshrc",
+    "AGENTS.md",
+    "LICENSE",
+    "README.md",
+    "skills.txt",
+])
+
+# Format checks
+fmt_test(
+    name = "agents_md_fmt",
+    src = "AGENTS.md",
+    tool = "prettier",
+)
+
+fmt_test(
+    name = "license_fmt",
+    src = "LICENSE",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "readme_md_fmt",
+    src = "README.md",
+    tool = "prettier",
+)
+
+fmt_test(
+    name = "bash_entrypoint_fmt",
+    src = ".bash_entrypoint",
+    tool = "shfmt",
+)
+
+fmt_test(
+    name = "bazelrc_fmt",
+    src = ".bazelrc",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "zshrc_fmt",
+    src = ".zshrc",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "skills_txt_fmt",
+    src = "skills.txt",
+    tool = "textfmt",
+)
+
+# File type tags
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "skills_txt_tag",
+    src = "skills.txt",
+    tags = [
+        "doc",
+    ],
+)
+
+tagged_file(
+    name = "agents_md_tag",
+    src = "AGENTS.md",
+    tags = [
+        "doc",
+    ],
+)
+
+tagged_file(
+    name = "license_tag",
+    src = "LICENSE",
+    tags = [
+        "doc",
+    ],
+)
+
+tagged_file(
+    name = "readme_md_tag",
+    src = "README.md",
+    tags = [
+        "doc",
+    ],
+)
+
+tagged_file(
+    name = "bash_entrypoint_tag",
+    src = ".bash_entrypoint",
+    tags = [
+        "config",
+        "shell",
+    ],
+)
+
+tagged_file(
+    name = "bazelrc_tag",
+    src = ".bazelrc",
+    tags = [
+        "bazel",
+        "config",
+    ],
+)
+
+tagged_file(
+    name = "zshrc_tag",
+    src = ".zshrc",
+    tags = [
+        "config",
+        "shell",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

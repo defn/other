@@ -1,0 +1,19 @@
+# Leaf 'spiral' references the bare leaf name "defn" as a quoted
+# string: AIDR-00102 violation (rule 2, bare directory name).
+
+! exec crosstenantlit input.json
+stdout 'tenant/spiral/x\.cue:1 contains forbidden literal "defn"'
+stdout 'owned by tenant "defn"'
+stdout 'kind=name'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": []},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": []}
+  ],
+  "files": [
+    {"path": "tenant/spiral/x.cue", "tenant": "spiral", "content": "neighbor: \"defn\"\n"}
+  ],
+  "gen_writes": []
+}

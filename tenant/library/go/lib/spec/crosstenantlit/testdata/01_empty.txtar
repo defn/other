@@ -1,0 +1,11 @@
+# No tenants, no files: trivially clean.
+
+exec crosstenantlit input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "tenants": [],
+  "files": [],
+  "gen_writes": []
+}

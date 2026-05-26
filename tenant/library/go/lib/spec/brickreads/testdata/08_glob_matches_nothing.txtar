@@ -1,0 +1,18 @@
+# A's read-glob `shared/*.cue` matches nothing in any sibling's
+# writes. No finding -- the read entry is acknowledged but no
+# concrete path intersects.
+
+exec brickreads input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"}
+  },
+  "brick_io": {
+    "a": {"reads": ["shared/*.cue"], "writes": ["foo/out.cue"]},
+    "b": {"reads": ["bar/in.cue"], "writes": ["bar/elsewhere.cue", "other/x.json"]}
+  }
+}

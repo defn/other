@@ -1,0 +1,4 @@
+# Generated from schema/versions.cue -- DO NOT EDIT.
+KYVERNO_VERSION = "1.18.1"
+KYVERNO_CHART_VERSION = "3.8.1"
+KYVERNO_CHART_SHA256 = "a33f35b83b6991daf6a1b1cf995becbe369747fcd84411d5089d55a40ee4ae0d"

@@ -1,0 +1,76 @@
+"""Gross -- temporary files that need a proper home later."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "registry_ca_pem_tag",
+    src = "registry-ca.pem",
+    tags = [
+        "config",
+    ],
+)
+
+tagged_file(
+    name = "registry_cert_pem_tag",
+    src = "registry-cert.pem",
+    tags = [
+        "config",
+    ],
+)
+
+tagged_file(
+    name = "registry_key_pem_tag",
+    src = "registry-key.pem",
+    tags = [
+        "config",
+    ],
+)
+
+fmt_test(
+    name = "registry_ca_pem_fmt",
+    src = "registry-ca.pem",
+    tool = "binary",
+)
+
+fmt_test(
+    name = "registry_cert_pem_fmt",
+    src = "registry-cert.pem",
+    tool = "binary",
+)
+
+fmt_test(
+    name = "registry_key_pem_fmt",
+    src = "registry-key.pem",
+    tool = "binary",
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

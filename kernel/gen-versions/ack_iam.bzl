@@ -1,0 +1,4 @@
+# Generated from schema/versions.cue -- DO NOT EDIT.
+ACK_IAM_VERSION = "1.6.3"
+ACK_IAM_CHART_VERSION = "1.6.4"
+ACK_IAM_CHART_SHA256 = "b182c6acc495a9f5e6e039cde8295020a39583c06a1f34e8785bdde6b6ff40fd"

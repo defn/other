@@ -1,0 +1,1 @@
+clone https://github.com/GalleyBytes/terraform-operator@75eab98ed87e29b08e1a9f5556ec72997e0f481d

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# .bash_entrypoint -- REQUIRED: VS Code devcontainer shell hijack.
+#
+# VS Code's devcontainer CLI hardcodes the terminal launch as:
+#   /usr/bin/bash --init-file ~/.bash_entrypoint -s <workspaceFolder>
+#
+# This cannot be overridden via devcontainer.json terminal settings --
+# those settings only affect NEW terminals, not the initial shell that
+# VS Code spawns when connecting to the container.
+#
+# Since we use zsh (set as default shell in Dockerfile.base via
+# usermod -s /bin/zsh), we exec into zsh immediately, discarding bash.
+# The -l flag makes it a login shell so ~/.zshrc is sourced.
+
+exec /bin/zsh -l

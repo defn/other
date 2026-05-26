@@ -1,0 +1,16 @@
+# A pair colliding on multiple paths: aggregated into one entry.
+
+! exec brickcollision input.json
+stdout '^a__b collide on: shared/x\.cue, shared/y\.cue, shared/z\.cue$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"}
+  },
+  "brick_io": {
+    "a": {"writes": ["shared/x.cue", "shared/y.cue", "shared/z.cue"]},
+    "b": {"writes": ["shared/x.cue", "shared/y.cue", "shared/z.cue"]}
+  }
+}

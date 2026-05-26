@@ -1,0 +1,83 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "main_tf_fmt",
+    src = "main.tf",
+    tool = "tofu",
+)
+
+fmt_test(
+    name = "variables_tf_fmt",
+    src = "variables.tf",
+    tool = "tofu",
+)
+
+fmt_test(
+    name = "outputs_tf_fmt",
+    src = "outputs.tf",
+    tool = "tofu",
+)
+
+fmt_test(
+    name = "regions_gen_tf_fmt",
+    src = "regions.gen.tf",
+    tool = "tofu",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "main_tf_tag",
+    src = "main.tf",
+    tags = ["config"],
+)
+
+tagged_file(
+    name = "variables_tf_tag",
+    src = "variables.tf",
+    tags = ["config"],
+)
+
+tagged_file(
+    name = "outputs_tf_tag",
+    src = "outputs.tf",
+    tags = ["config"],
+)
+
+tagged_file(
+    name = "regions_gen_tf_tag",
+    src = "regions.gen.tf",
+    tags = [
+        "config",
+        "generated",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

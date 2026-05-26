@@ -1,0 +1,14 @@
+# Single brick with writes: nothing to collide with.
+
+exec brickcollision input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"}
+  },
+  "brick_io": {
+    "a": {"writes": ["foo/x.cue", "foo/y.cue"]}
+  }
+}

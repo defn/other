@@ -1,0 +1,17 @@
+# Two bricks; A's reads and B's writes don't overlap, B's reads and
+# A's writes don't overlap. No staleness.
+
+exec brickreads input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"}
+  },
+  "brick_io": {
+    "a": {"reads": ["foo/in.cue"], "writes": ["foo/out.cue"]},
+    "b": {"reads": ["bar/in.cue"], "writes": ["bar/out.cue"]}
+  }
+}

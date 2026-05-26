@@ -1,0 +1,117 @@
+"""k8s platform interface -- catalog re-export for k8s platform definitions."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+exports_files([
+    "domain_patch.cue",
+    "irsa_patch.cue",
+    "tailscale_patch.cue",
+    "k8s.cue",
+    "templates.cue",
+])
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "k8s_cue_fmt",
+    src = "k8s.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "k8s_cue_tag",
+    src = "k8s.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+fmt_test(
+    name = "templates_cue_fmt",
+    src = "templates.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "templates_cue_tag",
+    src = "templates.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+fmt_test(
+    name = "irsa_patch_cue_fmt",
+    src = "irsa_patch.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "irsa_patch_cue_tag",
+    src = "irsa_patch.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+fmt_test(
+    name = "domain_patch_cue_fmt",
+    src = "domain_patch.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "domain_patch_cue_tag",
+    src = "domain_patch.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+fmt_test(
+    name = "tailscale_patch_cue_fmt",
+    src = "tailscale_patch.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "tailscale_patch_cue_tag",
+    src = "tailscale_patch.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

@@ -1,0 +1,6 @@
+// Go version is patched by Bazel genrule //:go_work_gen from schema/versions.cue.
+// Do not edit the go directive by hand. Run: bazelisk run //:go_work_sync
+
+go 1.26.3
+
+use .

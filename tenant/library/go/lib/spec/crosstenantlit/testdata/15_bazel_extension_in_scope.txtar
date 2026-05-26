@@ -1,0 +1,20 @@
+# BUILD.bazel files are now in scope (AIDR-00103 review). Generator-
+# claimed BUILD.bazel are skipped via gen_writes; hand-edited
+# tenant BUILD.bazel hardcoding another tenant's profile fires.
+
+! exec crosstenantlit input.json
+stdout 'tenant/spiral/q/BUILD\.bazel:1 contains forbidden literal "defn-org"'
+stdout 'kind=profile'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": []}
+  ],
+  "files": [
+    {"path": "tenant/spiral/q/BUILD.bazel", "tenant": "spiral", "content": "aws_profile = \"defn-org\"\n"},
+    {"path": "tenant/spiral/r/BUILD.bazel", "tenant": "spiral", "content": "aws_profile = \"defn-org\"\n"}
+  ],
+  "gen_writes": ["tenant/spiral/r/BUILD.bazel"]
+}

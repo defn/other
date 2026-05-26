@@ -1,0 +1,21 @@
+# Three non-ancestor bricks claim the same path. C(3,2) = 3 pairs
+# all reported. Pairs are alphabetically sorted: a__b, a__c, b__c.
+
+! exec brickcollision input.json
+stdout '^a__b collide on: shared\.cue$'
+stdout '^a__c collide on: shared\.cue$'
+stdout '^b__c collide on: shared\.cue$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "p/a"},
+    "b": {"path": "p/b"},
+    "c": {"path": "p/c"}
+  },
+  "brick_io": {
+    "a": {"writes": ["shared.cue"]},
+    "b": {"writes": ["shared.cue"]},
+    "c": {"writes": ["shared.cue"]}
+  }
+}

@@ -1,0 +1,170 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+# All git-tracked files in this package must be registered with Bazel.
+exports_files([
+    ".zsh-entrypoint",
+    ".zshrc",
+    "devcontainer.json",
+    "docker-compose.macos.yml",
+    "docker-compose.yml",
+    "init-host.clj",
+    "post-attach.clj",
+    "post-start.clj",
+])
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "zsh_entrypoint_fmt",
+    src = ".zsh-entrypoint",
+    tool = "shfmt",
+)
+
+fmt_test(
+    name = "zshrc_fmt",
+    src = ".zshrc",
+    tool = "shfmt",
+)
+
+fmt_test(
+    name = "devcontainer_json_fmt",
+    src = "devcontainer.json",
+    tool = "biome",
+)
+
+fmt_test(
+    name = "docker_compose_macos_yml_fmt",
+    src = "docker-compose.macos.yml",
+    tool = "yq",
+)
+
+fmt_test(
+    name = "docker_compose_yml_fmt",
+    src = "docker-compose.yml",
+    tool = "yq",
+)
+
+fmt_test(
+    name = "init_host_fmt",
+    src = "init-host.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "post_attach_fmt",
+    src = "post-attach.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "post_start_fmt",
+    src = "post-start.clj",
+    tool = "cljstyle",
+)
+
+# File type tags
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "devcontainer_json_tag",
+    src = "devcontainer.json",
+    tags = [
+        "config",
+        "devcontainer",
+        "json",
+    ],
+)
+
+tagged_file(
+    name = "docker_compose_macos_yml_tag",
+    src = "docker-compose.macos.yml",
+    tags = [
+        "config",
+        "docker",
+        "yaml",
+    ],
+)
+
+tagged_file(
+    name = "docker_compose_yml_tag",
+    src = "docker-compose.yml",
+    tags = [
+        "config",
+        "docker",
+        "yaml",
+    ],
+)
+
+tagged_file(
+    name = "init_host_tag",
+    src = "init-host.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+tagged_file(
+    name = "post_attach_tag",
+    src = "post-attach.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+tagged_file(
+    name = "post_start_tag",
+    src = "post-start.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+tagged_file(
+    name = "zsh_entrypoint_tag",
+    src = ".zsh-entrypoint",
+    tags = [
+        "config",
+        "devcontainer",
+        "shell",
+    ],
+)
+
+tagged_file(
+    name = "zshrc_tag",
+    src = ".zshrc",
+    tags = [
+        "config",
+        "devcontainer",
+        "shell",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

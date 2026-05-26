@@ -1,0 +1,32 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+fmt_test(
+    name = "mise_toml_fmt",
+    src = "mise.toml",
+    tool = "taplo",
+)
+
+tagged_file(
+    name = "mise_toml_tag",
+    src = "mise.toml",
+    tags = [
+        "config",
+        "toml",
+    ],
+)

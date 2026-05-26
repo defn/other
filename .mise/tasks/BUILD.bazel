@@ -1,0 +1,856 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+# All git-tracked files in this package must be registered with Bazel.
+exports_files(glob([
+    "*.clj",
+    "*.go",
+]))
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "build_fmt",
+    src = "build.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "open_fmt",
+    src = "open.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "check_fmt",
+    src = "check.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "defn_fmt",
+    src = "defn.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "check_bazel_fmt",
+    src = "check-bazel.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "check_contract_lattice_coverage_fmt",
+    src = "check-contract-lattice-coverage.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "check_fork_fmt",
+    src = "check-fork.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "check_manifest_fmt",
+    src = "check-manifest.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "gen_fmt",
+    src = "gen.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "gen_registry_cert_fmt",
+    src = "gen-registry-cert.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "hatch_fmt",
+    src = "hatch.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "test_fmt",
+    src = "test.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "dev_fmt",
+    src = "dev.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "dev_base_fmt",
+    src = "dev-base.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_bazel_remote_fmt",
+    src = "dev-bazel-remote.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_bootstrap_fmt",
+    src = "dev-bootstrap.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "dev_cache_fmt",
+    src = "dev-cache.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_edge_fmt",
+    src = "dev-edge.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "claude_fmt",
+    src = "claude.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "down_fmt",
+    src = "down.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "dev_postgres_fmt",
+    src = "dev-postgres.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_pull_fmt",
+    src = "dev-pull.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "dev_redis_fmt",
+    src = "dev-redis.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_registry_fmt",
+    src = "dev-registry.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_rebase_fmt",
+    src = "dev-rebase.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_reload_fmt",
+    src = "dev-reload.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_sync_fmt",
+    src = "dev-sync.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_install_fmt",
+    src = "dev-install.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_uninstall_fmt",
+    src = "dev-uninstall.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "login_fmt",
+    src = "login.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "macos_fmt",
+    src = "macos.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "opencode_fmt",
+    src = "opencode.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "dev_push",
+    src = "dev-push.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "trust_registry_cert_fmt",
+    src = "trust-registry-cert.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "normalize_modes_fmt",
+    src = "normalize-modes.go",
+    tool = "yae",
+)
+
+fmt_test(
+    name = "check_zsh_safety_fmt",
+    src = "check-zsh-safety.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "clean_fmt",
+    src = "clean.clj",
+    tool = "cljstyle",
+)
+
+# File type tags
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+# Mise tasks
+tagged_file(
+    name = "build_task",
+    src = "build.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "open_task",
+    src = "open.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "check_task",
+    src = "check.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "check_bazel_task",
+    src = "check-bazel.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "check_contract_lattice_coverage_task",
+    src = "check-contract-lattice-coverage.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "check_fork_task",
+    src = "check-fork.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "check_manifest_task",
+    src = "check-manifest.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "claude_task",
+    src = "claude.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "down_task",
+    src = "down.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_task",
+    src = "dev.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_base_task",
+    src = "dev-base.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_bazel_remote_task",
+    src = "dev-bazel-remote.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_bootstrap_task",
+    src = "dev-bootstrap.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_cache_task",
+    src = "dev-cache.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_edge_task",
+    src = "dev-edge.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_postgres_task",
+    src = "dev-postgres.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_pull_task",
+    src = "dev-pull.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_rebase_task",
+    src = "dev-rebase.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_registry_task",
+    src = "dev-registry.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_redis_task",
+    src = "dev-redis.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_reload_task",
+    src = "dev-reload.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_sync_task",
+    src = "dev-sync.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_install_task",
+    src = "dev-install.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_uninstall_task",
+    src = "dev-uninstall.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "gen_task",
+    src = "gen.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "hatch_task",
+    src = "hatch.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "login_task",
+    src = "login.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "macos_task",
+    src = "macos.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "opencode_task",
+    src = "opencode.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "dev_push_task",
+    src = "dev-push.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "test_task",
+    src = "test.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "fmt_fmt",
+    src = "fmt.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "fmt_task",
+    src = "fmt.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "sync_module_versions_fmt",
+    src = "sync-module-versions.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "sync_module_versions_task",
+    src = "sync-module-versions.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "up_fmt",
+    src = "up.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "up_task",
+    src = "up.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "upgrade_fmt",
+    src = "upgrade.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "upgrade_task",
+    src = "upgrade.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "afs_fmt",
+    src = "afs.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "afs_task",
+    src = "afs.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "aidr_fmt",
+    src = "aidr.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "aidr_task",
+    src = "aidr.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "airef_fmt",
+    src = "airef.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "airef_task",
+    src = "airef.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "check_images_fmt",
+    src = "check-images.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "check_images_task",
+    src = "check-images.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "create_fmt",
+    src = "create.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "deploy_argocd_fmt",
+    src = "deploy-argocd.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "sync_crds_fmt",
+    src = "sync-crds.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "helm_bump_fmt",
+    src = "helm-bump.clj",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "helm_publish_fmt",
+    src = "helm-publish.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "create_task",
+    src = "create.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "deploy_argocd_task",
+    src = "deploy-argocd.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "sync_crds_task",
+    src = "sync-crds.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "helm_bump_task",
+    src = "helm-bump.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "helm_publish_task",
+    src = "helm-publish.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "sync_mirrors_fmt",
+    src = "sync-mirrors.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "sync_mirrors_task",
+    src = "sync-mirrors.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "rename_account_email_fmt",
+    src = "rename-account-email.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "rename_account_email_task",
+    src = "rename-account-email.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "tf_fmt",
+    src = "tf.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "tf_task",
+    src = "tf.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "aws_ecr_login_fmt",
+    src = "aws-ecr-login.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "aws_ecr_login_task",
+    src = "aws-ecr-login.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "gen_registry_cert_task",
+    src = "gen-registry-cert.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "trust_registry_cert_task",
+    src = "trust-registry-cert.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "normalize_modes_task",
+    src = "normalize-modes.go",
+    tags = [
+        "go",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "check_zsh_safety_task",
+    src = "check-zsh-safety.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+tagged_file(
+    name = "clean_task",
+    src = "clean.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+fmt_test(
+    name = "nono_fmt",
+    src = "nono.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "nono_task",
+    src = "nono.clj",
+    tags = [
+        "clojure",
+        "mise-task",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

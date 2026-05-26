@@ -1,0 +1,20 @@
+{
+	"name": "@defn/m",
+	"version": "0.0.1",
+	"private": true,
+	"description": "defn monorepo workspace",
+	"license": "Apache-2.0",
+	"engines": {
+		"node": ">=24.14.1",
+		"pnpm": ">=10.33.2"
+	},
+	"packageManager": "pnpm@10.33.2",
+	"devDependencies": {
+		"typescript": "6.0.2"
+	},
+	"comments": {
+		"packageManager": "CRITICAL: Must sync with mise.toml pnpm version AND MODULE.bazel",
+		"engines.node": "CRITICAL: Must sync with mise.toml node version AND MODULE.bazel node.toolchain(node_version). Must be LTS (even-numbered).",
+		"devDependencies.typescript": "CRITICAL: Must sync with MODULE.bazel rules_ts_ext.deps(ts_version). Must be exact version (no semver range)."
+	}
+}

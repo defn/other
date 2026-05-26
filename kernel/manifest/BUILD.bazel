@@ -1,0 +1,55 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+# All git-tracked files in this package must be registered with Bazel.
+# gen-manifest.cue lives in top-level var/ (AIDR-00145 D5.1); the gen
+# var overlay re-projects it into package manifest at load time.
+exports_files([
+    "manifest.cue",
+])
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "manifest_cue_fmt",
+    src = "manifest.cue",
+    tool = "cue",
+)
+
+# File type tags
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "manifest_tag",
+    src = "manifest.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

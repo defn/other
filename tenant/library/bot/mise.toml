@@ -1,0 +1,4 @@
+# Bot parent config -- credentials inherited by all bot subdirectories.
+# Secrets loaded from .env (not checked in).
+[env]
+_.file = ".env"

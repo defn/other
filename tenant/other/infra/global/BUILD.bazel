@@ -1,0 +1,63 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+fmt_test(
+    name = "main_tf_fmt",
+    src = "main.tf",
+    tool = "tofu",
+)
+
+tagged_file(
+    name = "main_tf_tag",
+    src = "main.tf",
+    tags = [
+        "config",
+        "generated",
+    ],
+)
+
+fmt_test(
+    name = "mise_toml_fmt",
+    src = "mise.toml",
+    tool = "taplo",
+)
+
+tagged_file(
+    name = "mise_toml_tag",
+    src = "mise.toml",
+    tags = [
+        "config",
+        "generated",
+        "toml",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

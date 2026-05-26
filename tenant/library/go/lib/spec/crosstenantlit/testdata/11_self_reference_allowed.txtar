@@ -1,0 +1,18 @@
+# Self-reference inside the owning tenant's tree is allowed. defn
+# may name "defn", "tenant/defn", or "defn-org" anywhere in its own
+# subtree.
+
+exec crosstenantlit input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": ["spiral-org"]}
+  ],
+  "files": [
+    {"path": "tenant/defn/x.cue", "tenant": "defn", "content": "self: \"defn\"\nself_path: \"tenant/defn\"\nprofile: \"defn-org\"\n"}
+  ],
+  "gen_writes": []
+}

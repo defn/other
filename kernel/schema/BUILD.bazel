@@ -1,0 +1,416 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+exports_files(glob(["*.cue"]))
+
+# Used by //kernel/spec/test:fork_smoke (AIDR-00071).
+filegroup(
+    name = "schema_files",
+    srcs = glob(["*.cue"]),
+    visibility = ["//kernel/spec:__pkg__"],
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "mise_cue_fmt",
+    src = "mise.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "app_cue_fmt",
+    src = "app.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "aws_cue_fmt",
+    src = "aws.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "domain_cue_fmt",
+    src = "domain.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "brick_cue_fmt",
+    src = "brick.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "versions_cue_fmt",
+    src = "versions.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "formatter_cue_fmt",
+    src = "formatter.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "k8s_cue_fmt",
+    src = "k8s.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "mirror_cue_fmt",
+    src = "mirror.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "env_cue_fmt",
+    src = "env.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "k3d_cue_fmt",
+    src = "k3d.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "oci_cue_fmt",
+    src = "oci.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "image_cue_fmt",
+    src = "image.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "discordbot_cue_fmt",
+    src = "discordbot.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "gmailbot_cue_fmt",
+    src = "gmailbot.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "matrixbot_cue_fmt",
+    src = "matrixbot.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "slackbot_cue_fmt",
+    src = "slackbot.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "scripting_cue_fmt",
+    src = "scripting.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "skill_cue_fmt",
+    src = "skill.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "mise_cue_tag",
+    src = "mise.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "app_cue_tag",
+    src = "app.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "aws_cue_tag",
+    src = "aws.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "domain_cue_tag",
+    src = "domain.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "brick_cue_tag",
+    src = "brick.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "versions_cue_tag",
+    src = "versions.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "formatter_cue_tag",
+    src = "formatter.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "k8s_cue_tag",
+    src = "k8s.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "mirror_cue_tag",
+    src = "mirror.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "env_cue_tag",
+    src = "env.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "k3d_cue_tag",
+    src = "k3d.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "oci_cue_tag",
+    src = "oci.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "image_cue_tag",
+    src = "image.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "discordbot_cue_tag",
+    src = "discordbot.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "matrixbot_cue_tag",
+    src = "matrixbot.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "gmailbot_cue_tag",
+    src = "gmailbot.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "slackbot_cue_tag",
+    src = "slackbot.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "scripting_cue_tag",
+    src = "scripting.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+tagged_file(
+    name = "skill_cue_tag",
+    src = "skill.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+fmt_test(
+    name = "telegrambot_cue_fmt",
+    src = "telegrambot.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "telegrambot_cue_tag",
+    src = "telegrambot.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+fmt_test(
+    name = "irsa_cue_fmt",
+    src = "irsa.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "irsa_cue_tag",
+    src = "irsa.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+fmt_test(
+    name = "secret_cue_fmt",
+    src = "secret.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "secret_cue_tag",
+    src = "secret.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+fmt_test(
+    name = "auth_cue_fmt",
+    src = "auth.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "auth_cue_tag",
+    src = "auth.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+fmt_test(
+    name = "imagebootstrap_cue_fmt",
+    src = "imagebootstrap.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "imagebootstrap_cue_tag",
+    src = "imagebootstrap.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+fmt_test(
+    name = "imagebuilder_cue_fmt",
+    src = "imagebuilder.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "imagebuilder_cue_tag",
+    src = "imagebuilder.cue",
+    tags = [
+        "config",
+        "cue",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

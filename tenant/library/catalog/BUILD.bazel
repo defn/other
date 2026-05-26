@@ -1,0 +1,30 @@
+"""Per-tenant catalog instance data; merged into kernel catalog at load time."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file", "tagged_package")
+
+exports_files(glob(["*.cue"]))
+
+# Used by //kernel/spec/test:fork_smoke (AIDR-00071).
+filegroup(
+    name = "catalog_files",
+    srcs = glob(["*.cue"]),
+    visibility = ["//kernel/spec:__pkg__"],
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = ["bazel-build"],
+)
+
+# Auto-tag every *.cue file in this dir. App-generator-emitted
+# brick-app--*.cue files (per AIDR-00071, library apps land here)
+# get fmt_test + tagged_file coverage automatically.
+tagged_package(exclude = ["BUILD.bazel"])

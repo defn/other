@@ -1,0 +1,16 @@
+# Two non-ancestor bricks share a single write path: collision fires.
+
+! exec brickcollision input.json
+stdout '^a__b collide on: shared/x\.cue$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"}
+  },
+  "brick_io": {
+    "a": {"writes": ["foo/y.cue", "shared/x.cue"]},
+    "b": {"writes": ["bar/y.cue", "shared/x.cue"]}
+  }
+}

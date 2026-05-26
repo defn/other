@@ -1,0 +1,3 @@
+# Default Bazel user configuration (non-devcontainer).
+#
+# No remote cache. Local builds only.

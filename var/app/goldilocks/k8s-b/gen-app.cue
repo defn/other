@@ -1,0 +1,352 @@
+@experiment(aliasv2,explicitopen,shortcircuit,try)
+
+package app
+
+objects: ServiceAccount: "goldilocks-controller": {
+	apiVersion: "v1"
+	kind:       "ServiceAccount"
+	metadata: {
+		labels: {
+			"app.kubernetes.io/component":  "controller"
+			"app.kubernetes.io/instance":   "goldilocks"
+			"app.kubernetes.io/managed-by": "Helm"
+			"app.kubernetes.io/name":       "goldilocks"
+			"helm.sh/chart":                "goldilocks-10.3.0"
+		}
+		name:      "goldilocks-controller"
+		namespace: "goldilocks"
+	}
+}
+objects: ServiceAccount: "goldilocks-dashboard": {
+	apiVersion: "v1"
+	kind:       "ServiceAccount"
+	metadata: {
+		labels: {
+			"app.kubernetes.io/component":  "dashboard"
+			"app.kubernetes.io/instance":   "goldilocks"
+			"app.kubernetes.io/managed-by": "Helm"
+			"app.kubernetes.io/name":       "goldilocks"
+			"helm.sh/chart":                "goldilocks-10.3.0"
+		}
+		name:      "goldilocks-dashboard"
+		namespace: "goldilocks"
+	}
+}
+objects: ClusterRole: "goldilocks-controller": {
+	apiVersion: "rbac.authorization.k8s.io/v1"
+	kind:       "ClusterRole"
+	metadata: {
+		labels: {
+			"app.kubernetes.io/component":  "controller"
+			"app.kubernetes.io/instance":   "goldilocks"
+			"app.kubernetes.io/managed-by": "Helm"
+			"app.kubernetes.io/name":       "goldilocks"
+			"helm.sh/chart":                "goldilocks-10.3.0"
+		}
+		name: "goldilocks-controller"
+	}
+	rules: [{
+		apiGroups: ["apps"]
+		resources: ["*"]
+		verbs: [
+			"get",
+			"list",
+			"watch",
+		]
+	}, {
+		apiGroups: ["batch"]
+		resources: [
+			"cronjobs",
+			"jobs",
+		]
+		verbs: [
+			"get",
+			"list",
+			"watch",
+		]
+	}, {
+		apiGroups: [""]
+		resources: [
+			"namespaces",
+			"pods",
+		]
+		verbs: [
+			"get",
+			"list",
+			"watch",
+		]
+	}, {
+		apiGroups: ["autoscaling.k8s.io"]
+		resources: ["verticalpodautoscalers"]
+		verbs: [
+			"get",
+			"list",
+			"create",
+			"delete",
+			"update",
+		]
+	}, {
+		apiGroups: ["argoproj.io"]
+		resources: ["rollouts"]
+		verbs: [
+			"get",
+			"list",
+			"watch",
+		]
+	}]
+}
+objects: ClusterRole: "goldilocks-dashboard": {
+	apiVersion: "rbac.authorization.k8s.io/v1"
+	kind:       "ClusterRole"
+	metadata: {
+		labels: {
+			"app.kubernetes.io/component":  "dashboard"
+			"app.kubernetes.io/instance":   "goldilocks"
+			"app.kubernetes.io/managed-by": "Helm"
+			"app.kubernetes.io/name":       "goldilocks"
+			"helm.sh/chart":                "goldilocks-10.3.0"
+		}
+		name: "goldilocks-dashboard"
+	}
+	rules: [{
+		apiGroups: ["autoscaling.k8s.io"]
+		resources: ["verticalpodautoscalers"]
+		verbs: [
+			"get",
+			"list",
+		]
+	}, {
+		apiGroups: ["apps"]
+		resources: ["*"]
+		verbs: [
+			"get",
+			"list",
+		]
+	}, {
+		apiGroups: [""]
+		resources: [
+			"namespaces",
+			"pods",
+		]
+		verbs: [
+			"get",
+			"list",
+		]
+	}, {
+		apiGroups: ["argoproj.io"]
+		resources: ["rollouts"]
+		verbs: [
+			"get",
+			"list",
+		]
+	}]
+}
+objects: ClusterRoleBinding: "goldilocks-controller": {
+	apiVersion: "rbac.authorization.k8s.io/v1"
+	kind:       "ClusterRoleBinding"
+	metadata: {
+		labels: {
+			"app.kubernetes.io/component":  "controller"
+			"app.kubernetes.io/instance":   "goldilocks"
+			"app.kubernetes.io/managed-by": "Helm"
+			"app.kubernetes.io/name":       "goldilocks"
+			"helm.sh/chart":                "goldilocks-10.3.0"
+		}
+		name: "goldilocks-controller"
+	}
+	roleRef: {
+		apiGroup: "rbac.authorization.k8s.io"
+		kind:     "ClusterRole"
+		name:     "goldilocks-controller"
+	}
+	subjects: [{
+		kind:      "ServiceAccount"
+		name:      "goldilocks-controller"
+		namespace: "goldilocks"
+	}]
+}
+objects: ClusterRoleBinding: "goldilocks-dashboard": {
+	apiVersion: "rbac.authorization.k8s.io/v1"
+	kind:       "ClusterRoleBinding"
+	metadata: {
+		labels: {
+			"app.kubernetes.io/component":  "dashboard"
+			"app.kubernetes.io/instance":   "goldilocks"
+			"app.kubernetes.io/managed-by": "Helm"
+			"app.kubernetes.io/name":       "goldilocks"
+			"helm.sh/chart":                "goldilocks-10.3.0"
+		}
+		name: "goldilocks-dashboard"
+	}
+	roleRef: {
+		apiGroup: "rbac.authorization.k8s.io"
+		kind:     "ClusterRole"
+		name:     "goldilocks-dashboard"
+	}
+	subjects: [{
+		kind:      "ServiceAccount"
+		name:      "goldilocks-dashboard"
+		namespace: "goldilocks"
+	}]
+}
+objects: Service: "goldilocks-dashboard": {
+	apiVersion: "v1"
+	kind:       "Service"
+	metadata: {
+		labels: {
+			"app.kubernetes.io/component":  "dashboard"
+			"app.kubernetes.io/instance":   "goldilocks"
+			"app.kubernetes.io/managed-by": "Helm"
+			"app.kubernetes.io/name":       "goldilocks"
+			"helm.sh/chart":                "goldilocks-10.3.0"
+		}
+		name:      "goldilocks-dashboard"
+		namespace: "goldilocks"
+	}
+	spec: {
+		ports: [{
+			name:       "http"
+			port:       80
+			protocol:   "TCP"
+			targetPort: "http"
+		}]
+		selector: {
+			"app.kubernetes.io/component": "dashboard"
+			"app.kubernetes.io/instance":  "goldilocks"
+			"app.kubernetes.io/name":      "goldilocks"
+		}
+		type: "ClusterIP"
+	}
+}
+objects: Deployment: "goldilocks-controller": {
+	apiVersion: "apps/v1"
+	kind:       "Deployment"
+	metadata: {
+		labels: {
+			"app.kubernetes.io/component":  "controller"
+			"app.kubernetes.io/instance":   "goldilocks"
+			"app.kubernetes.io/managed-by": "Helm"
+			"app.kubernetes.io/name":       "goldilocks"
+			"helm.sh/chart":                "goldilocks-10.3.0"
+		}
+		name:      "goldilocks-controller"
+		namespace: "goldilocks"
+	}
+	spec: {
+		replicas:             1
+		revisionHistoryLimit: 10
+		selector: matchLabels: {
+			"app.kubernetes.io/component": "controller"
+			"app.kubernetes.io/instance":  "goldilocks"
+			"app.kubernetes.io/name":      "goldilocks"
+		}
+		template: {
+			metadata: labels: {
+				"app.kubernetes.io/component": "controller"
+				"app.kubernetes.io/instance":  "goldilocks"
+				"app.kubernetes.io/name":      "goldilocks"
+			}
+			spec: {
+				containers: [{
+					command: [
+						"/goldilocks",
+						"controller",
+						"-v2",
+					]
+					image:           "host.k3d.internal:5000/mirror/us-docker.pkg.dev/fairwinds-ops/oss/goldilocks:v4.14.1"
+					imagePullPolicy: "Always"
+					name:            "goldilocks"
+					resources: {
+						limits: {}
+						requests: {
+							cpu:    "25m"
+							memory: "256Mi"
+						}
+					}
+					securityContext: {
+						allowPrivilegeEscalation: false
+						capabilities: drop: ["ALL"]
+						readOnlyRootFilesystem: true
+						runAsNonRoot:           true
+						runAsUser:              10324
+					}
+				}]
+				securityContext: seccompProfile: type: "RuntimeDefault"
+				serviceAccountName: "goldilocks-controller"
+			}
+		}
+	}
+}
+objects: Deployment: "goldilocks-dashboard": {
+	apiVersion: "apps/v1"
+	kind:       "Deployment"
+	metadata: {
+		labels: {
+			"app.kubernetes.io/component":  "dashboard"
+			"app.kubernetes.io/instance":   "goldilocks"
+			"app.kubernetes.io/managed-by": "Helm"
+			"app.kubernetes.io/name":       "goldilocks"
+			"helm.sh/chart":                "goldilocks-10.3.0"
+		}
+		name:      "goldilocks-dashboard"
+		namespace: "goldilocks"
+	}
+	spec: {
+		replicas:             2
+		revisionHistoryLimit: 10
+		selector: matchLabels: {
+			"app.kubernetes.io/component": "dashboard"
+			"app.kubernetes.io/instance":  "goldilocks"
+			"app.kubernetes.io/name":      "goldilocks"
+		}
+		template: {
+			metadata: labels: {
+				"app.kubernetes.io/component": "dashboard"
+				"app.kubernetes.io/instance":  "goldilocks"
+				"app.kubernetes.io/name":      "goldilocks"
+			}
+			spec: {
+				containers: [{
+					command: [
+						"/goldilocks",
+						"dashboard",
+						"--exclude-containers=linkerd-proxy,istio-proxy",
+						"-v2",
+					]
+					image:           "host.k3d.internal:5000/mirror/us-docker.pkg.dev/fairwinds-ops/oss/goldilocks:v4.14.1"
+					imagePullPolicy: "Always"
+					livenessProbe: httpGet: {
+						path: "/health"
+						port: "http"
+					}
+					name: "goldilocks"
+					ports: [{
+						containerPort: 8080
+						name:          "http"
+						protocol:      "TCP"
+					}]
+					readinessProbe: httpGet: {
+						path: "/health"
+						port: "http"
+					}
+					resources: {
+						limits: {}
+						requests: {
+							cpu:    "25m"
+							memory: "256Mi"
+						}
+					}
+					securityContext: {
+						allowPrivilegeEscalation: false
+						capabilities: drop: ["ALL"]
+						readOnlyRootFilesystem: true
+						runAsNonRoot:           true
+						runAsUser:              10324
+					}
+				}]
+				securityContext: seccompProfile: type: "RuntimeDefault"
+				serviceAccountName: "goldilocks-dashboard"
+			}
+		}
+	}
+}

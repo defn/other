@@ -1,0 +1,46 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+# All git-tracked files in this package must be registered with Bazel.
+# bin/other is the fork's namesake-CLI shim (AIDR-00141 Stage 3.5d);
+# bin/defn rides via the kernel bundle as a compat alias that also
+# resolves to the active tenant's CLI through `mise run defn`.
+exports_files([
+    "bazel-runner",
+    "bbs",
+    "bootstrap-bazelrc",
+    "defn",
+    "k3k",
+    "other",
+    "yae",
+])
+
+fmt_test(name = "build_bazel_fmt", src = "BUILD.bazel", tool = "buildifier")
+fmt_test(name = "bbs_fmt", src = "bbs", tool = "shfmt")
+fmt_test(name = "yae_fmt", src = "yae", tool = "shfmt")
+fmt_test(name = "bazel_runner_fmt", src = "bazel-runner", tool = "shfmt")
+fmt_test(name = "bootstrap_bazelrc_fmt", src = "bootstrap-bazelrc", tool = "shfmt")
+fmt_test(name = "defn_fmt", src = "defn", tool = "cljstyle")
+fmt_test(name = "k3k_fmt", src = "k3k", tool = "shfmt")
+fmt_test(name = "other_fmt", src = "other", tool = "cljstyle")
+
+tagged_file(name = "build_bazel_tag", src = "BUILD.bazel", tags = ["bazel-build"])
+tagged_file(name = "bazel_runner_tag", src = "bazel-runner", tags = ["script", "shell"])
+tagged_file(name = "bootstrap_bazelrc_tag", src = "bootstrap-bazelrc", tags = ["script", "shell"])
+tagged_file(name = "bbs_tag", src = "bbs", tags = ["script", "shell"])
+tagged_file(name = "yae_tag", src = "yae", tags = ["script", "shell"])
+tagged_file(name = "defn_tag", src = "defn", tags = ["clojure", "script"])
+tagged_file(name = "k3k_tag", src = "k3k", tags = ["script", "shell"])
+tagged_file(name = "other_tag", src = "other", tags = ["clojure", "script"])
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = ["cue", "source"],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

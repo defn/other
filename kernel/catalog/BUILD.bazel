@@ -1,0 +1,263 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+load(":brick_files.bzl", "BRICK_FILES")
+
+# Per-instance catalog shards (AIDR-00083 leaves-into-branches).
+# glob discovers each new shard; manifest.cue regex pattern matches
+# the filename; convention-contracts-<aggregate>.cue claims it.
+SHARDED_INSTANCES = sorted(glob(
+    [
+        "skills-*.cue",
+        "formatters-*.cue",
+    ],
+    allow_empty = True,
+))
+
+# Used by //kernel/spec/test:fork_smoke (AIDR-00071).
+filegroup(
+    name = "catalog_files",
+    srcs = [
+        "apps.cue",
+        "bots.cue",
+        "bricks.cue",
+        "catalog.cue",
+        "checks.cue",
+        "formatters.cue",
+        "mirror.cue",
+        "mirrors.cue",
+        "shared-bricks.cue",
+        "skills.cue",
+        # gen-chart-digests.cue lives in top-level var/ (AIDR-00145 D5.1);
+        # re-projected into package catalog by the gen var overlay.
+        "//var:gen-chart-digests.cue",
+    ] + BRICK_FILES + SHARDED_INSTANCES,
+    visibility = ["//kernel/spec:__pkg__"],
+)
+
+exports_files([
+    "apps.cue",
+    "bots.cue",
+    "bricks.cue",
+    "catalog.cue",
+    "checks.cue",
+    "formatters.cue",
+    "mirror.cue",
+    "mirrors.cue",
+    "shared-bricks.cue",
+    "skills.cue",
+] + BRICK_FILES + SHARDED_INSTANCES)
+
+# --- static files ---
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "bricks_cue_fmt",
+    src = "bricks.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "catalog_cue_fmt",
+    src = "catalog.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "checks_cue_fmt",
+    src = "checks.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "apps_cue_fmt",
+    src = "apps.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "bots_cue_fmt",
+    src = "bots.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "skills_cue_fmt",
+    src = "skills.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "formatters_cue_fmt",
+    src = "formatters.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "shared_bricks_cue_fmt",
+    src = "shared-bricks.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "apps_cue_tag",
+    src = "apps.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "bots_cue_tag",
+    src = "bots.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "skills_cue_tag",
+    src = "skills.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "shared_bricks_cue_tag",
+    src = "shared-bricks.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "bricks_cue_tag",
+    src = "bricks.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "catalog_cue_tag",
+    src = "catalog.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "checks_cue_tag",
+    src = "checks.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "formatters_cue_tag",
+    src = "formatters.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+fmt_test(
+    name = "mirror_cue_fmt",
+    src = "mirror.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "mirrors_cue_fmt",
+    src = "mirrors.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "mirror_cue_tag",
+    src = "mirror.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "mirrors_cue_tag",
+    src = "mirrors.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "brick_files_bzl_tag",
+    src = "brick_files.bzl",
+    tags = [
+        "bazel",
+        "bazel-macro",
+        "generated",
+    ],
+)
+
+fmt_test(
+    name = "brick_files_bzl_fmt",
+    src = "brick_files.bzl",
+    tool = "buildifier",
+)
+
+# --- per-brick + per-instance shard files (comprehension) ---
+
+[fmt_test(
+    name = f.replace(".", "_") + "_fmt",
+    src = f,
+    tool = "cue",
+) for f in BRICK_FILES + SHARDED_INSTANCES]
+
+[tagged_file(
+    name = f.replace(".", "_") + "_tag",
+    src = f,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for f in BRICK_FILES + SHARDED_INSTANCES]
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

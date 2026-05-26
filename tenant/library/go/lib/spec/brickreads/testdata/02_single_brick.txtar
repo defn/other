@@ -1,0 +1,15 @@
+# A single brick with reads and writes; nothing else to compare
+# against. No staleness possible.
+
+exec brickreads input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"}
+  },
+  "brick_io": {
+    "a": {"reads": ["foo/in.cue"], "writes": ["foo/out.cue"]}
+  }
+}

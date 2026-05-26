@@ -1,0 +1,114 @@
+"""Documentation files."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+exports_files([
+    "BRICK-BOOTSTRAP.md",
+    "BRICK-CREATE.md",
+    "BRICK-GO.md",
+    "BRICK.md",
+    "PORTABILITY.md",
+])
+
+# Format checks
+fmt_test(
+    name = "brick_bootstrap_md_fmt",
+    src = "BRICK-BOOTSTRAP.md",
+    tool = "prettier",
+)
+
+fmt_test(
+    name = "brick_create_md_fmt",
+    src = "BRICK-CREATE.md",
+    tool = "prettier",
+)
+
+fmt_test(
+    name = "brick_go_md_fmt",
+    src = "BRICK-GO.md",
+    tool = "prettier",
+)
+
+fmt_test(
+    name = "brick_md_fmt",
+    src = "BRICK.md",
+    tool = "prettier",
+)
+
+fmt_test(
+    name = "portability_md_fmt",
+    src = "PORTABILITY.md",
+    tool = "prettier",
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+# File type tags
+tagged_file(
+    name = "brick_bootstrap_md_tag",
+    src = "BRICK-BOOTSTRAP.md",
+    tags = [
+        "doc",
+    ],
+)
+
+tagged_file(
+    name = "brick_create_md_tag",
+    src = "BRICK-CREATE.md",
+    tags = [
+        "doc",
+    ],
+)
+
+tagged_file(
+    name = "brick_go_md_tag",
+    src = "BRICK-GO.md",
+    tags = [
+        "doc",
+    ],
+)
+
+tagged_file(
+    name = "brick_md_tag",
+    src = "BRICK.md",
+    tags = [
+        "doc",
+    ],
+)
+
+tagged_file(
+    name = "portability_md_tag",
+    src = "PORTABILITY.md",
+    tags = [
+        "doc",
+    ],
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

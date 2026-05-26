@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# yae - yaegi shebang wrapper
+#
+# Usage as shebang: #!/usr/bin/env yae
+#
+# Features:
+#   - Strips leading #-prefixed lines (shebang, #MISE annotations) so
+#     yaegi receives valid Go source; mise still reads #MISE metadata
+#     from the original file before executing
+#   - Falls through to `yaegi` for direct invocation when no script given
+#
+# Args note: yaegi sets os.Args to the full interpreter invocation, so
+# in a script `os.Args` is [yaegi, run, tmpfile, --, ...user-args].
+# To extract user args, scan os.Args for "--" and take everything after it.
+set -euo pipefail
+
+# TODO: add a syntax/type-check mode (pre-execution go build) for yae scripts.
+
+SCRIPT="${1:-}"
+if [[ -z "$SCRIPT" ]]; then
+	exec yaegi "$@"
+fi
+shift
+
+TMP=$(mktemp /tmp/yae_XXXXXX.go)
+grep -v '^#' "$SCRIPT" >"$TMP"
+yaegi run -unrestricted "$TMP" -- "$@"
+STATUS=$?
+rm -f "$TMP"
+exit $STATUS

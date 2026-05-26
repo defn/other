@@ -1,0 +1,18 @@
+# Go raw / CUE backtick form (`X`) is also caught: avoids the escape-
+# the-double-quote workaround for the same hardcode shape.
+
+! exec crosstenantlit input.json
+stdout 'tenant/spiral/y\.go:1 contains forbidden literal "defn-org"'
+stdout 'kind=profile'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": []}
+  ],
+  "files": [
+    {"path": "tenant/spiral/y.go", "tenant": "spiral", "content": "var p = `defn-org`\n"}
+  ],
+  "gen_writes": []
+}

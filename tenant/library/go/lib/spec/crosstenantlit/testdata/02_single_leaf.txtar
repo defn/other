@@ -1,0 +1,15 @@
+# Single leaf tenant has no other leaves to clash with: clean.
+
+exec crosstenantlit input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]}
+  ],
+  "files": [
+    {"path": "tenant/defn/k3d/x/main.tf", "tenant": "defn", "content": "profile = \"defn-org\"\n"}
+  ],
+  "gen_writes": []
+}

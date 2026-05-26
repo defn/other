@@ -1,0 +1,17 @@
+# A single brick's writes list contains the same path twice (mirrors
+# the production case where two generators both claim a known-shared
+# path and the brick_io aggregation unions them without dedup). The
+# check must NOT emit a self-pair (slug__slug) for the duplicate.
+
+exec brickcollision input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "kernel/catalog"}
+  },
+  "brick_io": {
+    "a": {"writes": ["kernel/catalog/gen-chart-digests.cue", "kernel/catalog/gen-chart-digests.cue", "kernel/catalog/other.cue"]}
+  }
+}

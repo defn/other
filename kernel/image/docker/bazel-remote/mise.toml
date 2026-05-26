@@ -1,0 +1,3 @@
+[env]
+IMAGE_TAG = "defn.dev/devcontainer/bazel-remote"
+BASE_IMAGE = "defn.dev/external/bazel-remote:latest"

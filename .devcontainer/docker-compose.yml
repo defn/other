@@ -1,0 +1,157 @@
+# Docker Compose for defn devcontainer.
+#
+# All sidecars use network_mode: "service:dev" to share the dev
+# container's network namespace (like a k8s pod). Services are
+# reachable at localhost from inside the dev container.
+#
+# All services use init: true (tini) to reap zombie processes.
+#
+# Data volumes persist across container restarts. Use
+# "docker compose down" to stop services (preserves volumes),
+# "docker compose down -v" to also delete data.
+services:
+  dev:
+    image: defn.dev/devcontainer/dev:edge
+    init: true
+    volumes:
+      # Bind mount the host repo so dev-sync can git pull and rebuild.
+      - ../../:/workspace
+      # Docker socket for building images from inside the container.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Named volumes for state that persists across container rebuilds.
+      - home-mise:/home/ubuntu/.local/share/mise
+      - home-cache:/home/ubuntu/.cache
+      - home-config:/home/ubuntu/.config
+      - home-claude:/home/ubuntu/.claude
+      - home-dotfiles:/home/ubuntu/.dotfiles
+      - code-server-extensions:/home/ubuntu/.local/share/code-server/extensions
+      - home-afs:/var/lib/artifact-fs
+      - tailscale-state:/var/lib/tailscale
+    user: ubuntu
+    command: sleep infinity
+    # Host network so sidecars share localhost with the dev container.
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      # SYS_ADMIN required for FUSE mounts (artifact-fs).
+      - SYS_ADMIN
+    # AppArmor on Ubuntu hosts blocks FUSE mounts by default; unconfined
+    # lets artifact-fs mount /dev/fuse from inside the container.
+    security_opt:
+      - apparmor=unconfined
+    devices:
+      - /dev/net/tun:/dev/net/tun
+      # FUSE device for artifact-fs mounts. artifact-fs is installed
+      # but not started automatically -- run manually when needed.
+      - /dev/fuse:/dev/fuse
+    environment:
+      - DEVCONTAINER=1
+      - REDIS_URL=redis://localhost:6379
+      - POSTGRES_URL=postgresql://postgres@localhost:5432/postgres
+      - DATABASE_URL=postgresql://postgres@localhost:5432/postgres
+      - PATH=/home/ubuntu/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+  redis:
+    image: defn.dev/devcontainer/redis
+    init: true
+    network_mode: "service:dev"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+  postgres:
+    image: defn.dev/devcontainer/postgres
+    init: true
+    network_mode: "service:dev"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - -U
+        - postgres
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+  bazel-remote:
+    image: defn.dev/devcontainer/bazel-remote
+    init: true
+    network_mode: "service:dev"
+    volumes:
+      - bazel-remote-data:/data
+    command:
+      - --http_address=127.0.0.1:8080
+      - --grpc_address=127.0.0.1:9092
+      - --profile_address=127.0.0.1:6060
+      - --max_size
+      - "50"
+    healthcheck:
+      disable: true
+    restart: always
+  # Registry: TLS via custom CA, NO auth. Local-trust assumption --
+  # any process on the developer's host can pull/push. Loopback bind
+  # eliminates remote-network exposure; matching exposure on macOS
+  # via the docker-compose.macos.yml override. Adding auth is a
+  # multi-platform design problem tracked in AIDR-00124 Triage.
+  registry:
+    image: defn.dev/devcontainer/registry
+    init: true
+    network_mode: "service:dev"
+    volumes:
+      - registry-data:/var/lib/registry
+      - registry-tls-certs:/certs:ro
+    environment:
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+      - REGISTRY_STORAGE_REDIRECT_DISABLE=true
+      - REGISTRY_HTTP_ADDR=127.0.0.1:5000
+      # The registry serves the LEAF cert (registry-cert.pem) signed
+      # by registry-ca.pem. Clients trust registry-ca.pem; serving
+      # the CA cert directly would violate Go's strict x509 (CA cert
+      # used as TLS leaf is non-compliant). See AIDR-00126.
+      - REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry-cert.pem
+      - REGISTRY_HTTP_TLS_KEY=/certs/registry-key.pem
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - --no-check-certificate
+        - -O
+        - /dev/null
+        - https://localhost:5000/v2/
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: always
+volumes:
+  home-mise:
+  home-cache:
+  home-config:
+  home-claude:
+  home-dotfiles:
+  home-afs:
+  code-server-extensions:
+  postgres-data:
+  bazel-remote-data:
+  redis-data:
+  registry-data:
+  tailscale-state:
+  registry-tls-certs:
+    external: true

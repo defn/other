@@ -1,0 +1,53 @@
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+tagged_file(
+    name = "buildkite_agent_txt_tag",
+    src = "buildkite--agent.txt",
+    tags = ["doc"],
+)
+
+tagged_file(
+    name = "cloudflare_artifact_fs_txt_tag",
+    src = "cloudflare--artifact-fs.txt",
+    tags = ["doc"],
+)
+
+tagged_file(
+    name = "galleybytes_terraform_operator_txt_tag",
+    src = "galleybytes--terraform-operator.txt",
+    tags = ["doc"],
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "buildkite_agent_txt_fmt",
+    src = "buildkite--agent.txt",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "cloudflare_artifact_fs_txt_fmt",
+    src = "cloudflare--artifact-fs.txt",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "galleybytes_terraform_operator_txt_fmt",
+    src = "galleybytes--terraform-operator.txt",
+    tool = "textfmt",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)

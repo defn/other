@@ -1,0 +1,5 @@
+# Bazel must not descend into nested bootstrap targets (m/other/m
+# is a portability-test copy created by `mise run bootstrap-other`
+# per AIDR-00138). Without this, Bazel discovers BUILD.bazel files
+# inside other/m and fails analysis against partial schema state.
+other

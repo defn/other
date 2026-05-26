@@ -1,0 +1,4 @@
+# Generated from schema/versions.cue -- DO NOT EDIT.
+CAPSULE_VERSION = "0.12.4"
+CAPSULE_CHART_VERSION = "0.12.4"
+CAPSULE_CHART_SHA256 = "6a60a1a770fa6f03bc9d4d5ed9524b709c27015a27d1db328aab7bc942f49f7d"

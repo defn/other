@@ -1,0 +1,42 @@
+{
+	"name": "defn",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "dev",
+	"workspaceFolder": "/home/ubuntu/m",
+	"remoteUser": "ubuntu",
+	"initializeCommand": "mise x -- bbs .devcontainer/init-host.clj",
+	"postStartCommand": "/usr/local/bin/mise x -- bbs .devcontainer/post-start.clj",
+	"postAttachCommand": "/usr/local/bin/mise x -- bbs .devcontainer/post-attach.clj",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"terminal.integrated.defaultProfile.linux": "zsh",
+				"terminal.integrated.profiles.linux": {
+					"zsh": {
+						"path": "/bin/zsh",
+						"args": ["-l"],
+						"env": {
+							"ZDOTDIR": "/home/ubuntu/m/.devcontainer"
+						}
+					}
+				},
+				"terminal.integrated.automationProfile.linux": {
+					"path": "/bin/zsh"
+				}
+			},
+			"extensions": [
+				"anthropics.claude-code",
+				"bazelbuild.vscode-bazel",
+				"betterthantomorrow.calva",
+				"golang.go",
+				"ms-python.python",
+				"vscodevim.vim"
+			]
+		}
+	},
+	"remoteEnv": {
+		"DEVCONTAINER": "1",
+		"GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
+	},
+	"userEnvProbe": "loginInteractiveShell"
+}

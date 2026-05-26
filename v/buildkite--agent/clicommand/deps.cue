@@ -1,0 +1,36 @@
+@experiment(aliasv2,explicitopen,shortcircuit,try)
+
+package deps
+
+deps: [
+	"//v/buildkite--agent/agent",
+	"//v/buildkite--agent/api",
+	"//v/buildkite--agent/cliconfig",
+	"//v/buildkite--agent/core",
+	"//v/buildkite--agent/env",
+	"//v/buildkite--agent/internal/agentapi",
+	"//v/buildkite--agent/internal/awslib",
+	"//v/buildkite--agent/internal/cryptosigner/aws",
+	"//v/buildkite--agent/internal/cryptosigner/gcp",
+	"//v/buildkite--agent/internal/experiments",
+	"//v/buildkite--agent/internal/job",
+	"//v/buildkite--agent/internal/job/hook",
+	"//v/buildkite--agent/internal/osutil",
+	"//v/buildkite--agent/internal/self",
+	"//v/buildkite--agent/internal/shell",
+	"//v/buildkite--agent/jobapi",
+	"//v/buildkite--agent/lock",
+	"//v/buildkite--agent/logger",
+	"//v/buildkite--agent/metrics",
+	"//v/buildkite--agent/process",
+	"//v/buildkite--agent/status",
+	"//v/buildkite--agent/tracetools",
+	"//v/buildkite--agent/version",
+	"@com_github_aws_aws_sdk_go_v2//aws",
+	"@com_github_aws_aws_sdk_go_v2_config//:config",
+	"@com_github_aws_aws_sdk_go_v2_service_kms//:kms",
+	"@com_github_buildkite_shellwords//:shellwords",
+	"@com_github_lestrrat_go_jwx_v2//jwk",
+	"@com_github_oleiade_reflections//:reflections",
+	"@com_github_urfave_cli//:cli",
+]

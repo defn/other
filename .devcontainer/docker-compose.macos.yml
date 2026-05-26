@@ -1,0 +1,38 @@
+# Compose override for the macOS dev-bootstrap path. Layered as
+# `-f docker-compose.yml -f docker-compose.macos.yml`. Only the
+# `registry` sidecar differs; the Linux flow never reads this file.
+#
+# Base binds 127.0.0.1:5000 inside `service:dev`'s namespace.
+# On Linux that namespace is the host (network_mode: host) and the
+# port is reachable from dev-push and from k3d via host.k3d.internal.
+# On macOS Docker Desktop "host" is the VM's namespace -- the macOS
+# host can't reach VM loopback, so we move the registry to a bridge
+# network and publish 127.0.0.1:5000:5000 on the macOS host.
+#
+# Local-trust assumption (parity with Linux): no auth on the registry,
+# only TLS via custom CA. Loopback bind eliminates remote-network
+# exposure; any process on the macOS host can still pull/push. Don't
+# relax the 127.0.0.1: prefix on the published port without revisiting
+# the trust model. See AIDR-00124 Triage.
+services:
+  registry:
+    # !reset null clears the base file's `network_mode: "service:dev"`
+    # before `networks:` adds the project-private `dev` network.
+    # Without the reset, Compose reports "mutually exclusive
+    # network_mode and networks" because scalar inheritance keeps the
+    # base value alive. Requires Compose >= 2.24.
+    network_mode: !reset null
+    # Project-private named network; do NOT use `network_mode: bridge`
+    # which puts the container on Docker's shared system bridge where
+    # any co-resident Compose stack on the same Docker Desktop could
+    # reach it.
+    networks:
+      - dev
+    ports:
+      - "127.0.0.1:5000:5000"
+    environment:
+      # Merges with base env list; same-key entries here win.
+      # Base bound 127.0.0.1; published port needs 0.0.0.0 inside.
+      - REGISTRY_HTTP_ADDR=0.0.0.0:5000
+networks:
+  dev:

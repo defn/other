@@ -1,0 +1,18 @@
+# Leaf 'spiral' references "tenant/library" -- library is non-leaf
+# (no auth.cue) and is the intentional federation target. Clean.
+
+exec crosstenantlit input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": []},
+    {"name": "library", "path": "tenant/library", "is_leaf": false, "profiles": []}
+  ],
+  "files": [
+    {"path": "tenant/spiral/app/x.cue", "tenant": "spiral", "content": "subscribe: \"tenant/library/app/foo\"\n"}
+  ],
+  "gen_writes": []
+}

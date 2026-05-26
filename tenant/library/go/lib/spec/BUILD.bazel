@@ -1,0 +1,67 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+go_library(
+    name = "spec",
+    srcs = ["spec.go"],
+    importpath = "github.com/defn/other/m/tenant/library/go/lib/spec",
+    visibility = [
+        "//go:__subpackages__",
+        "//tenant/defn/go:__subpackages__",
+        "//tenant/library/go:__subpackages__",
+    ],
+)
+
+go_test(
+    name = "spec_test",
+    size = "large",
+    srcs = ["spec_test.go"],
+    data = ["//var/lattice:shards"],
+    embed = [":spec"],
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "spec_go_fmt",
+    src = "spec.go",
+    tool = "gofmt",
+)
+
+fmt_test(
+    name = "spec_test_go_fmt",
+    src = "spec_test.go",
+    tool = "gofmt",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "spec_go_tag",
+    src = "spec.go",
+    tags = [
+        "go",
+        "source",
+    ],
+)
+
+tagged_file(
+    name = "spec_test_go_tag",
+    src = "spec_test.go",
+    tags = [
+        "go",
+        "source",
+    ],
+)

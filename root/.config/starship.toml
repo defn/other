@@ -1,0 +1,89 @@
+scan_timeout = 1000
+command_timeout = 500
+
+format = """
+$env_var\
+$all"""
+
+[character]
+success_symbol = "[λ](bold green)"
+error_symbol = "[λ](bold red)"
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+
+[git_branch]
+symbol = " "
+
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+
+# Disable D-Bus integration to prevent "Failed to connect to bus" errors
+[env_var.DBUS_SESSION_BUS_ADDRESS]
+disabled = true
+
+# Disable noisy / slow modules
+[battery]
+disabled = true
+
+[gcloud]
+disabled = true
+
+[ruby]
+disabled = true
+
+[nodejs]
+disabled = true
+
+[golang]
+disabled = true
+
+[buf]
+disabled = true
+
+[terraform]
+disabled = true
+
+[python]
+disabled = true
+
+[nix_shell]
+disabled = true
+
+[container]
+disabled = true
+
+[docker_context]
+disabled = true
+
+[bun]
+disabled = true
+
+[java]
+disabled = true
+
+[package]
+disabled = true
+
+[kubernetes]
+disabled = true
+
+[cmake]
+disabled = true
+
+# Custom modules
+[custom.lockdown]
+command = 'if test "$(defaults read .GlobalPreferences.plist LDMGlobalEnabled)" == "1"; then echo locked-down; fi'
+when = ''' test "$(uname -s)" == "Darwin" '''
+format = '[$output]($style) '
+
+[custom.sip]
+command = 'if ! csrutil status | grep -i ": enabled" >/dev/null; then echo sip-disabled; fi'
+when = ''' test "$(uname -s)" == "Darwin" '''
+format = '[$output]($style) '
+
+[custom.defn_env]
+command = "printf '%s' \"$DEFN_ENV\""
+when = "test -n \"$DEFN_ENV\""
+format = '[$output]($style) '

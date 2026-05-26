@@ -1,0 +1,38 @@
+"""var/ -- top-level workspace-derived generator outputs (AIDR-00145 D5.1).
+
+A peer to kernel/ and tenant/. Holds volatile, per-workspace generator
+outputs (manifest/lattice snapshots, chart digests) so that kernel/ and
+tenant/ change only on structural edits, never to track regen churn.
+var/ is NOT bundled by `defn bootstrap` -- this fork generates its own
+var/ on first `mise run hatch`. Each *.cue declares the CUE package it
+logically belongs to and is re-projected into kernel/<package>/ by the
+gen var overlay. All files are generated; never hand-edit.
+"""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file", "tagged_package")
+
+exports_files(glob(["*.cue"]))
+
+filegroup(
+    name = "var_files",
+    srcs = glob(
+        ["*.cue"],
+        allow_empty = True,
+    ),
+    visibility = ["//kernel/spec:__pkg__"],
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = ["bazel-build"],
+)
+
+tagged_package(exclude = ["BUILD.bazel"])

@@ -1,0 +1,44 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+go_library(
+    name = "app",
+    srcs = ["app.go", "modules.go"],
+    importpath = "github.com/defn/other/m/tenant/other/go/cmd/other/app",
+    visibility = ["//tenant/other/go/cmd/other:__pkg__"],
+    deps = [
+        "//tenant/library/go/cmd/bootstrap",
+        "//tenant/library/go/cmd/build",
+        "//tenant/library/go/cmd/check",
+        "//tenant/library/go/cmd/dispatch",
+        "//tenant/library/go/cmd/gen",
+        "//tenant/library/go/cmd/hatch",
+        "//tenant/library/go/cmd/hello",
+        "//tenant/library/go/cmd/lattice",
+        "//tenant/library/go/cmd/pipeline",
+        "//tenant/library/go/cmd/root",
+        "//tenant/library/go/cmd/stamp",
+        "//tenant/library/go/cmd/sync",
+        "//tenant/library/go/cmd/version",
+        "//tenant/library/go/lib/cli",
+        "//tenant/library/go/lib/config",
+        "//tenant/library/go/lib/log",
+        "@com_github_spf13_cobra//:cobra",
+        "@org_uber_go_fx//:fx",
+        "@org_uber_go_fx//fxevent",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+fmt_test(name = "build_bazel_fmt", src = "BUILD.bazel", tool = "buildifier")
+fmt_test(name = "app_go_fmt", src = "app.go", tool = "gofmt")
+fmt_test(name = "modules_go_fmt", src = "modules.go", tool = "gofmt")
+
+tagged_file(name = "build_bazel_tag", src = "BUILD.bazel", tags = ["bazel", "bazel-build"])
+tagged_file(name = "app_go_tag", src = "app.go", tags = ["go", "source"])
+tagged_file(name = "modules_go_tag", src = "modules.go", tags = ["generated", "go"])
+
+[fmt_test(name = "dispatch_cue_fmt", src = src, tool = "cue") for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(name = "dispatch_cue_tag", src = src, tags = ["cue", "source"]) for src in glob(["dispatch.cue"], allow_empty = True)]

@@ -1,0 +1,21 @@
+# Ancestor-skip is symmetric. Order of slugs (alphabetic in Pair key
+# but not necessarily in path-depth) doesn't matter -- the rule
+# checks both directions.
+#
+# Here "z-deep" is alphabetically AFTER "a-shallow" but is a child
+# in the tree. The pair "a-shallow__z-deep" must be skipped.
+
+exec brickcollision input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "a-shallow": {"path": "kernel/foo"},
+    "z-deep": {"path": "kernel/foo/sub"}
+  },
+  "brick_io": {
+    "a-shallow": {"writes": ["kernel/foo/sub/file.cue"]},
+    "z-deep": {"writes": ["kernel/foo/sub/file.cue"]}
+  }
+}

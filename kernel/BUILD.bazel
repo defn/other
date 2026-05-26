@@ -1,0 +1,55 @@
+"""kernel/ -- reusable bricks machinery (schemas, generators, manifest, interfaces).
+
+This directory is a placeholder for the tenant-split refactor (see
+aidr/00068 when written). Content from /schema, /interface, /spec,
+/manifest, /helpers, /lib, /fmt, /gross, /doc, /gen-versions, and
+/catalog will migrate here in later stages.
+"""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "fmt_bzl_tag",
+    src = "fmt.bzl",
+    tags = [
+        "bazel",
+        "bazel-macro",
+    ],
+)
+
+tagged_file(
+    name = "tagged_bzl_tag",
+    src = "tagged.bzl",
+    tags = [
+        "bazel",
+        "bazel-macro",
+    ],
+)
+
+fmt_test(
+    name = "fmt_bzl_fmt",
+    src = "fmt.bzl",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "tagged_bzl_fmt",
+    src = "tagged.bzl",
+    tool = "buildifier",
+)

@@ -1,0 +1,25 @@
+"""tenant/library/go/ -- per-tenant Go subtree for the library tenant.
+
+Holds kernel-grade go-cmd bricks moved out of m/go/cmd/ per AIDR-00141.
+See aidr/00141-...md for the staged rollout. Forks inherit this entire
+subtree via the bootstrap bundle; the module-path rewrite ensures the
+fork's namesake CLI imports the rewritten library cmds.
+"""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)

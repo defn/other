@@ -1,0 +1,26 @@
+"""Per-tenant catalog stamped by `defn bootstrap init` (AIDR-00138)."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file", "tagged_package")
+
+exports_files(glob(["*.cue"]))
+
+filegroup(
+    name = "catalog_files",
+    srcs = glob(["*.cue"]),
+    visibility = ["//kernel/spec:__pkg__"],
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = ["bazel-build"],
+)
+
+tagged_package(exclude = ["BUILD.bazel"])

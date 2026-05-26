@@ -1,0 +1,30 @@
+"""Per-tenant spec shards: manual-files-*.cue entries for hand-written
+files owned by this tenant. Merged into kernel/spec/contracts at
+load time via the tenant-spec overlay (AIDR-00138 D5.2)."""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file", "tagged_package")
+
+exports_files(glob(["*.cue"]))
+
+# Consumed by kernel/spec's contracts_vet and friends so the Bazel
+# sandbox has visibility into this tenant's spec shards.
+filegroup(
+    name = "spec_files",
+    srcs = glob(["*.cue"]),
+    visibility = ["//kernel/spec:__pkg__"],
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = ["bazel-build"],
+)
+
+tagged_package(exclude = ["BUILD.bazel"])

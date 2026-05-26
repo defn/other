@@ -1,0 +1,535 @@
+# Root build file for defn monorepo
+
+load("@aspect_bazel_lib//lib:copy_to_bin.bzl", "copy_to_bin")
+load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+load("//kernel/gen-versions:go.bzl", "GO_VERSION")
+load("//kernel/gen-versions:node.bzl", "NODE_VERSION")
+load("//kernel/gen-versions:pnpm.bzl", "PNPM_VERSION")
+load("//kernel/gen-versions:typescript.bzl", "TYPESCRIPT_VERSION")
+
+# All git-tracked files in this package must be registered with Bazel.
+# See //manifest for coverage verification.
+exports_files([
+    ".bazelignore",
+    ".bazelrc",
+    ".bazelrc.user-default",
+    ".bazelrc.user-devcontainer",
+    ".bazelversion",
+    ".gitignore",
+    ".npmrc",
+    "MODULE.bazel",
+    "WORKSPACE",
+    "WORKSPACE.bazel",
+    "bb.edn",
+    "dprint.json",
+    "fmt.bzl",
+    "go.mod",
+    "go.sum",
+    "go.work",
+    "go.work.sum",
+    "mise.toml",
+    "package.json",
+    "pnpm-lock.yaml",
+    "tagged.bzl",
+    "tsconfig.json",
+])
+
+# ==============================================================================
+# Gazelle -- Go BUILD.bazel generation and dependency resolution
+# ==============================================================================
+
+# gazelle:prefix github.com/defn/other/m
+# gazelle:go_naming_convention import
+# gazelle:exclude vendor
+# gazelle:exclude node_modules
+
+gazelle_binary(
+    name = "gazelle_bin",
+    languages = [
+        "@bazel_gazelle//language/go",
+        "@bazel_gazelle//language/proto",
+    ],
+)
+
+gazelle(
+    name = "gazelle",
+    gazelle = ":gazelle_bin",
+)
+
+gazelle(
+    name = "gazelle_diff",
+    command = "fix",
+    extra_args = ["--mode=diff"],
+    gazelle = ":gazelle_bin",
+)
+
+# Copy tsconfig to bin for aspect_rules_ts
+copy_to_bin(
+    name = "tsconfig",
+    srcs = ["tsconfig.json"],
+    visibility = ["//visibility:public"],
+)
+
+# ==============================================================================
+# package.json version sync: inject pnpm, node, typescript versions from CUE
+# ==============================================================================
+
+genrule(
+    name = "package_json_gen",
+    srcs = ["package.json"],
+    outs = ["package_gen.json"],
+    cmd = "mise x jq -- jq " +
+          "'(.packageManager = \"pnpm@" + PNPM_VERSION + "\") " +
+          "| (.engines.pnpm = \">=" + PNPM_VERSION + "\") " +
+          "| (.engines.node = \">=" + NODE_VERSION + "\") " +
+          "| (.devDependencies.typescript = \"" + TYPESCRIPT_VERSION + "\")' " +
+          "$(location package.json) | mise x biome -- biome format --stdin-file-path=package.json > $@",
+)
+
+sh_binary(
+    name = "package_json_sync",
+    srcs = ["//gen/.mise/tasks:gen-sync.clj"],
+    args = [
+        "package.json",
+        "$(location :package_json_gen)",
+    ],
+    data = [
+        ":package_json_gen",
+        "//kernel/lib:defn.clj",
+    ],
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+)
+
+sh_test(
+    name = "package_json_drift_test",
+    timeout = "short",
+    srcs = ["//gen/.mise/tasks:gen-drift.clj"],
+    args = [
+        "$(location package.json)",
+        "$(location :package_json_gen)",
+    ],
+    data = [
+        "package.json",
+        ":package_json_gen",
+        "//kernel/lib:defn.clj",
+    ],
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = ["drift"],
+)
+
+# ==============================================================================
+# go.mod version sync: inject Go version from CUE
+# ==============================================================================
+
+genrule(
+    name = "go_mod_gen",
+    srcs = ["go.mod"],
+    outs = ["go_gen.mod"],
+    cmd = "sed -E 's/^(go )[^ ]+(.*)/\\1" + GO_VERSION + "\\2/' $(location go.mod) > $@",
+)
+
+sh_binary(
+    name = "go_mod_sync",
+    srcs = ["//gen/.mise/tasks:gen-sync.clj"],
+    args = [
+        "go.mod",
+        "$(location :go_mod_gen)",
+    ],
+    data = [
+        ":go_mod_gen",
+        "//kernel/lib:defn.clj",
+    ],
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+)
+
+sh_test(
+    name = "go_mod_drift_test",
+    timeout = "short",
+    srcs = ["//gen/.mise/tasks:gen-drift.clj"],
+    args = [
+        "$(location go.mod)",
+        "$(location :go_mod_gen)",
+    ],
+    data = [
+        "go.mod",
+        ":go_mod_gen",
+        "//kernel/lib:defn.clj",
+    ],
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = ["drift"],
+)
+
+# ==============================================================================
+# go.work version sync: inject Go version from CUE
+# ==============================================================================
+
+genrule(
+    name = "go_work_gen",
+    srcs = ["go.work"],
+    outs = ["go_gen.work"],
+    cmd = "sed -E 's/^(go )[^ ]+(.*)/\\1" + GO_VERSION + "\\2/' $(location go.work) > $@",
+)
+
+sh_binary(
+    name = "go_work_sync",
+    srcs = ["//gen/.mise/tasks:gen-sync.clj"],
+    args = [
+        "go.work",
+        "$(location :go_work_gen)",
+    ],
+    data = [
+        ":go_work_gen",
+        "//kernel/lib:defn.clj",
+    ],
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+)
+
+sh_test(
+    name = "go_work_drift_test",
+    timeout = "short",
+    srcs = ["//gen/.mise/tasks:gen-drift.clj"],
+    args = [
+        "$(location go.work)",
+        "$(location :go_work_gen)",
+    ],
+    data = [
+        "go.work",
+        ":go_work_gen",
+        "//kernel/lib:defn.clj",
+    ],
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = ["drift"],
+)
+
+# Format checks for root-level files
+fmt_test(
+    name = "package_json_fmt",
+    src = "package.json",
+    tool = "biome",
+)
+
+fmt_test(
+    name = "tsconfig_json_fmt",
+    src = "tsconfig.json",
+    tool = "biome",
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "mise_toml_fmt",
+    src = "mise.toml",
+    tool = "taplo",
+)
+
+fmt_test(
+    name = "module_bazel_fmt",
+    src = "MODULE.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "workspace_bazel_fmt",
+    src = "WORKSPACE.bazel",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "pnpm_lock_yaml_fmt",
+    src = "pnpm-lock.yaml",
+    tool = "yq",
+)
+
+fmt_test(
+    name = "bb_edn_fmt",
+    src = "bb.edn",
+    tool = "cljstyle",
+)
+
+fmt_test(
+    name = "dprint_json_fmt",
+    src = "dprint.json",
+    tool = "biome",
+)
+
+fmt_test(
+    name = "workspace_fmt",
+    src = "WORKSPACE",
+    tool = "buildifier",
+)
+
+fmt_test(
+    name = "bazelignore_fmt",
+    src = ".bazelignore",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "bazelrc_fmt",
+    src = ".bazelrc",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "bazelrc_user_default_fmt",
+    src = ".bazelrc.user-default",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "bazelrc_user_devcontainer_fmt",
+    src = ".bazelrc.user-devcontainer",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "bazelversion_fmt",
+    src = ".bazelversion",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "gitignore_fmt",
+    src = ".gitignore",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "npmrc_fmt",
+    src = ".npmrc",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "go_mod_fmt",
+    src = "go.mod",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "go_sum_fmt",
+    src = "go.sum",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "go_work_fmt",
+    src = "go.work",
+    tool = "textfmt",
+)
+
+fmt_test(
+    name = "go_work_sum_fmt",
+    src = "go.work.sum",
+    tool = "textfmt",
+)
+
+# File type tags
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+tagged_file(
+    name = "bazelignore_tag",
+    src = ".bazelignore",
+    tags = [
+        "bazel",
+        "bazel-config",
+    ],
+)
+
+tagged_file(
+    name = "bazelrc_tag",
+    src = ".bazelrc",
+    tags = [
+        "bazel",
+        "bazel-config",
+    ],
+)
+
+tagged_file(
+    name = "bazelrc_user_default_tag",
+    src = ".bazelrc.user-default",
+    tags = [
+        "bazel",
+        "bazel-config",
+    ],
+)
+
+tagged_file(
+    name = "bazelrc_user_devcontainer_tag",
+    src = ".bazelrc.user-devcontainer",
+    tags = [
+        "bazel",
+        "bazel-config",
+    ],
+)
+
+tagged_file(
+    name = "bazelversion_tag",
+    src = ".bazelversion",
+    tags = [
+        "bazel",
+        "bazel-config",
+        "patched",
+    ],
+)
+
+tagged_file(
+    name = "module_bazel_tag",
+    src = "MODULE.bazel",
+    tags = [
+        "bazel",
+        "bazel-module",
+        "patched",
+    ],
+)
+
+tagged_file(
+    name = "workspace_tag",
+    src = "WORKSPACE",
+    tags = [
+        "bazel",
+        "bazel-module",
+    ],
+)
+
+tagged_file(
+    name = "workspace_bazel_tag",
+    src = "WORKSPACE.bazel",
+    tags = [
+        "bazel",
+        "bazel-module",
+    ],
+)
+
+tagged_file(
+    name = "gitignore_tag",
+    src = ".gitignore",
+    tags = [
+        "config",
+        "git",
+    ],
+)
+
+tagged_file(
+    name = "npmrc_tag",
+    src = ".npmrc",
+    tags = [
+        "config",
+        "node",
+    ],
+)
+
+tagged_file(
+    name = "bb_edn_tag",
+    src = "bb.edn",
+    tags = [
+        "clojure",
+        "config",
+        "edn",
+    ],
+)
+
+tagged_file(
+    name = "dprint_json_tag",
+    src = "dprint.json",
+    tags = [
+        "config",
+        "json",
+    ],
+)
+
+tagged_file(
+    name = "go_mod_tag",
+    src = "go.mod",
+    tags = [
+        "config",
+        "go",
+        "patched",
+    ],
+)
+
+tagged_file(
+    name = "go_sum_tag",
+    src = "go.sum",
+    tags = [
+        "go",
+        "lock",
+    ],
+)
+
+tagged_file(
+    name = "go_work_tag",
+    src = "go.work",
+    tags = [
+        "config",
+        "go",
+        "patched",
+    ],
+)
+
+tagged_file(
+    name = "go_work_sum_tag",
+    src = "go.work.sum",
+    tags = [
+        "go",
+        "lock",
+    ],
+)
+
+tagged_file(
+    name = "mise_toml_tag",
+    src = "mise.toml",
+    tags = [
+        "config",
+        "generated",
+        "mise",
+        "toml",
+    ],
+)
+
+tagged_file(
+    name = "package_json_tag",
+    src = "package.json",
+    tags = [
+        "config",
+        "generated",
+        "json",
+        "node",
+        "package-json",
+    ],
+)
+
+tagged_file(
+    name = "tsconfig_json_tag",
+    src = "tsconfig.json",
+    tags = [
+        "config",
+        "json",
+        "typescript",
+    ],
+)
+
+tagged_file(
+    name = "pnpm_lock_yaml_tag",
+    src = "pnpm-lock.yaml",
+    tags = [
+        "lock",
+        "node",
+        "yaml",
+    ],
+)

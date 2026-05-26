@@ -1,0 +1,22 @@
+# Three bricks: A reads B's write, B reads C's write. Two findings:
+# (A vs B, B vs C). Diff does NOT report a transitive A-vs-C finding;
+# A would only be flagged against C if A directly reads a path C
+# writes, which is not the case here.
+
+! exec brickreads input.json
+stdout '^a stale on b: shared/ab\.cue$'
+stdout '^b stale on c: shared/bc\.cue$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"},
+    "c": {"path": "baz"}
+  },
+  "brick_io": {
+    "a": {"reads": ["shared/ab.cue"], "writes": ["foo/out.cue"]},
+    "b": {"reads": ["shared/bc.cue"], "writes": ["shared/ab.cue"]},
+    "c": {"reads": ["baz/in.cue"], "writes": ["shared/bc.cue"]}
+  }
+}

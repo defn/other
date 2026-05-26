@@ -1,0 +1,24 @@
+"""tenant/library/ -- the library tenant.
+
+Contributes generic, reusable apps that any other tenant can subscribe
+to via platform bindings in its catalog. The library tenant does not
+own clusters or AWS accounts; it is app-only.
+"""
+
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)

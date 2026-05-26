@@ -1,0 +1,48 @@
+run --noshow_loading_progress
+run --noshow_progress
+run --ui_event_filters=-info,-stdout,-stderr
+
+query --noshow_loading_progress
+query --noshow_progress
+query --ui_event_filters=-info
+
+cquery --noshow_loading_progress
+cquery --noshow_progress
+cquery --ui_event_filters=-info
+
+info --noshow_loading_progress
+info --noshow_progress
+info --ui_event_filters=-info
+
+# Path-dependent settings (HOME, MISE_CONFIG_FILE,
+# MISE_TRUSTED_CONFIG_PATHS, PATH entries pointing at m/bin and
+# the user's mise shims, sandbox_writable_path for ~/.cache and
+# ~/.local/state/mise) are written to .bazelrc.workspace by
+# m/bin/bootstrap-bazelrc -- run that script once after cloning
+# (and again if your workspace moves on disk). .bazelrc.workspace
+# is gitignored (per-clone). See AIDR-00071 follow-up for the
+# workspace-relative bazelrc design.
+#
+# NOTE: m/bin must be on PATH for bbs shebang.
+# NOTE: mise shims on PATH for tool resolution. Tool versions passed explicitly
+# in BUILD files via tools.bzl -- mise resolves via `mise x tool@version --`.
+# MISE_CONFIG_FILE ensures mise finds config from Bazel sandbox.
+try-import %workspace%/.bazelrc.workspace
+
+build --experimental_profile_include_primary_output
+build --experimental_profile_include_target_label
+build --noremote_upload_local_results
+build --noslim_profile
+build --remote_download_minimal
+build --verbose_failures
+
+# Suppress per-test summary lines for cached results; only uncached tests
+# get a summary line. Keeps `bazel test` output proportional to actual work.
+test --test_summary=short_uncached
+
+# Force color even when stdout is a pipe -- gen/check drive Bazel via
+# babashka.process, which is not a TTY. Without this, the second-and-on
+# Bazel invocations come out as plain text.
+common --color=yes
+
+try-import %workspace%/.bazelrc.user

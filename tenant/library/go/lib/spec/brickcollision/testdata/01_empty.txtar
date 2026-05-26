@@ -1,0 +1,10 @@
+# Empty inputs: no bricks, no brick_io. Should be a no-op.
+
+exec brickcollision input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {},
+  "brick_io": {}
+}

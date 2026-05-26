@@ -1,0 +1,2 @@
+# Spec tasks are defined in .mise/tasks/spec-run.clj and spec-run-slow.clj
+# so they are available from m/ (the workspace root).

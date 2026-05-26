@@ -1,0 +1,20 @@
+# Parent + child both write a path under the parent's subtree.
+# Path-prefix derivation always gives parents transitive ownership;
+# the coordinator never dispatches parent + descendant in parallel,
+# so this collision is intentionally suppressed (AIDR-00097
+# "Nested-brick path attribution" + AIDR-00098 ancestor-skip rule).
+
+exec brickcollision input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "fmt": {"path": "kernel/fmt"},
+    "fmt-bazel": {"path": "kernel/fmt/bazel"}
+  },
+  "brick_io": {
+    "fmt": {"writes": ["kernel/fmt/BUILD.bazel", "kernel/fmt/bazel/BUILD.bazel", "kernel/fmt/bazel/formatter.cue"]},
+    "fmt-bazel": {"writes": ["kernel/fmt/bazel/BUILD.bazel", "kernel/fmt/bazel/formatter.cue"]}
+  }
+}

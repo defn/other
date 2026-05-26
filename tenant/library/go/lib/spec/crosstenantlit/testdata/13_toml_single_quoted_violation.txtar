@@ -1,0 +1,18 @@
+# TOML literal-string form ('X') is also caught: mise.toml /
+# terraform.tfvars commonly use single-quoted profile values.
+
+! exec crosstenantlit input.json
+stdout 'tenant/spiral/x/mise\.toml:1 contains forbidden literal "defn-org"'
+stdout 'kind=profile'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": []}
+  ],
+  "files": [
+    {"path": "tenant/spiral/x/mise.toml", "tenant": "spiral", "content": "AWS_PROFILE = 'defn-org'\n"}
+  ],
+  "gen_writes": []
+}

@@ -1,0 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+
+go_library(
+    name = "other_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/defn/other/m/tenant/other/go/cmd/other",
+    visibility = ["//visibility:private"],
+    deps = ["//tenant/other/go/cmd/other/app"],
+)
+
+go_binary(
+    name = "other",
+    embed = [":other_lib"],
+    visibility = ["//visibility:public"],
+)
+
+fmt_test(name = "build_bazel_fmt", src = "BUILD.bazel", tool = "buildifier")
+fmt_test(name = "main_go_fmt", src = "main.go", tool = "gofmt")
+
+tagged_file(name = "build_bazel_tag", src = "BUILD.bazel", tags = ["bazel", "bazel-build"])
+tagged_file(name = "main_go_tag", src = "main.go", tags = ["go", "source"])
+
+[fmt_test(name = "dispatch_cue_fmt", src = src, tool = "cue") for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(name = "dispatch_cue_tag", src = src, tags = ["cue", "source"]) for src in glob(["dispatch.cue"], allow_empty = True)]

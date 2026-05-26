@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# k3k -- shim that exposes rancher/k3k's k3kcli on PATH as `k3k`.
+#
+# ubi (mise's ubi backend) installs raw-binary github releases under
+# the asset's filename, not the repo basename, so the rancher/k3k
+# release lands as `k3kcli`. This wrapper lets operators type `k3k`
+# the way they'd type any other CLI without learning that the asset
+# name and the user-facing verb differ. Pinned via the project's
+# mise.toml (mise x resolves the configured version).
+#
+# AIDR-00129 Option C; closes the m/bin/k3k slot in the
+# Stamper-post-tenant-split TODO.
+set -euo pipefail
+
+exec mise x github:rancher/k3k -- k3kcli "$@"

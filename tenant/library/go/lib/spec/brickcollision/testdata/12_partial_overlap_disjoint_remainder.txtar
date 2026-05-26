@@ -1,0 +1,19 @@
+# A pair shares one path but each also has unique writes. The
+# collision report contains only the shared path, sorted.
+
+! exec brickcollision input.json
+stdout '^a__b collide on: shared\.cue$'
+! stdout 'unique-a'
+! stdout 'unique-b'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"}
+  },
+  "brick_io": {
+    "a": {"writes": ["unique-a.cue", "shared.cue", "another-a.cue"]},
+    "b": {"writes": ["shared.cue", "unique-b.cue"]}
+  }
+}

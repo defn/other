@@ -1,0 +1,9 @@
+#!/usr/bin/env bbs
+;; bin/other -- fork namesake CLI shim (AIDR-00141 Stage 3.5d).
+;; Delegates to `mise run defn`, which reads default_tenant from the
+;; lattice and builds //tenant/<t>/go/cmd/<t>:<t> -- the same task
+;; serves every tenant's namesake CLI.
+
+(require '[babashka.process :as p])
+
+(p/exec (into ["mise" "run" "defn" "--"] *command-line-args*))

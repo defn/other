@@ -1,0 +1,16 @@
+# Two bricks with disjoint write sets: no collision.
+
+exec brickcollision input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "foo"},
+    "b": {"path": "bar"}
+  },
+  "brick_io": {
+    "a": {"writes": ["foo/x.cue", "foo/y.cue"]},
+    "b": {"writes": ["bar/x.cue", "bar/y.cue"]}
+  }
+}

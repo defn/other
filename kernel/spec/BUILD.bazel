@@ -1,0 +1,608 @@
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//kernel:fmt.bzl", "fmt_test")
+load("//kernel:tagged.bzl", "tagged_file")
+load("//kernel/gen-versions:cue.bzl", "CUE_VERSION")
+load(
+    ":tenant-deps.bzl",
+    "TENANT_AUTH_CUE_LABELS",
+    "TENANT_CATALOG_FILES_LABELS",
+    "TENANT_SPEC_FILES_LABELS",
+)
+
+# Sharded manual-files and convention-contracts (AIDR-00083). Each
+# new shard is just a new file -- no .bzl, BUILD.bazel, or manifest
+# edit required. glob() picks up the new file; the manifest.cue
+# regex pattern accepts the filename; the shard self-claims via
+# _manualFileShards.
+MANUAL_FILES_SHARDS = sorted(glob(["manual-files-*.cue"]))
+
+CONVENTION_CONTRACTS_SHARDS = sorted(glob(["convention-contracts*.cue"]))
+
+# Filegroups for sharded manual-files / convention-contracts. Used by
+# contracts_vet via $(locations) plural expansion so adding a shard
+# requires only writing the new file.
+filegroup(
+    name = "manual_files_shards",
+    srcs = MANUAL_FILES_SHARDS,
+)
+
+filegroup(
+    name = "convention_contracts_shards",
+    srcs = CONVENTION_CONTRACTS_SHARDS,
+)
+
+exports_files([
+    "brick-collision-vet-test.clj",
+    "contracts-schema.cue",
+    "contracts-vet-test.clj",
+    "cross-tenant-lit-vet-test.clj",
+    "gen-files.txt",
+    "known-shared.cue",
+    "lattice-schema.cue",
+    "lattice-schema-test.clj",
+    "lattice.cue",
+    "mise.toml",
+    "sync-files.txt",
+    "tenant-deps.bzl",
+] + MANUAL_FILES_SHARDS + CONVENTION_CONTRACTS_SHARDS)
+
+fmt_test(
+    name = "tenant_deps_bzl_fmt",
+    src = "tenant-deps.bzl",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "tenant_deps_bzl_tag",
+    src = "tenant-deps.bzl",
+    tags = [
+        "bazel",
+        "bazel-macro",
+        "generated",
+    ],
+)
+
+# Tenant-stamp smoke test (AIDR-00071, AIDR-00100). Pins the
+# universal-identity file set that //tenant/library/go/lib/stamp:StampTenant
+# emits. A regression in the stamp's output -- whether dropping a
+# file or silently growing one -- fails this test with the offending
+# diff. Companion to fork_smoke (overlay structure) and SPEC-00351
+# (string-level). Drives `defn stamp tenant --root SANDBOX NAME`
+# directly; AIDR-00100 retired the duplicate stamptenant internal
+# binary.
+sh_test(
+    name = "tenant_stamp_smoke",
+    timeout = "short",
+    srcs = ["tenant-stamp-smoke-test.clj"],
+    args = ["$(rootpath //tenant/other/go/cmd/other:other)"],
+    data = [
+        "tenant-stamp-smoke-test.clj",
+        "//tenant/other/go/cmd/other:other",
+        "//kernel/lib:defn.clj",
+    ],
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = [
+        "fork-smoke",
+        "spec",
+    ],
+)
+
+# Empty-tenant probe (AIDR-00072 follow-up). A falsifiability ritual
+# on the kernel: stamps a fresh empty tenant via StampTenant and runs
+# `cue eval` against the merged catalog with default_tenant retargeted
+# at the empty tenant. The probe exercises the kernel under the
+# maximally general refinement -- a tenant that contributes zero data.
+# If any kernel brick is implicitly relying on tenant input the empty
+# tenant can't supply, or hard-codes values that should be parameters,
+# this test fails closed with a typed CUE error naming the location.
+# Companion to fork_smoke (which uses a hand-written stub) and
+# tenant_stamp_smoke (which pins the stamp's universal-identity set).
+sh_test(
+    name = "empty_tenant_probe",
+    timeout = "short",
+    srcs = ["empty-tenant-probe-test.clj"],
+    args = [
+        CUE_VERSION,
+        "$(rootpath //tenant/other/go/cmd/other:other)",
+    ],
+    data = [
+        "empty-tenant-probe-test.clj",
+        "//cue.mod:module_files",
+        "//tenant/other/go/cmd/other:other",
+        "//kernel/catalog:catalog_files",
+        "//kernel/lib:defn.clj",
+        "//kernel/schema:schema_files",
+        "//kernel/spec/dispatch:dispatch_files",
+    ] + TENANT_CATALOG_FILES_LABELS,
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = [
+        "fork-smoke",
+        "spec",
+    ],
+)
+
+# Fork-readiness smoke test (AIDR-00071). Stages kernel/catalog,
+# kernel/schema, every tenant catalog (per AIDR-00138 D5.3 -- list
+# generated into tenant-deps.bzl), plus a synthetic _smoke tenant
+# overlay into TEST_TMPDIR and runs `cue eval` against the merged
+# catalog. Catches structural regressions that SPEC-00351 (in
+# //tenant/library/go/lib/spec:spec_test) misses -- e.g. a kernel/.cue file
+# accidentally referencing a defn-only catalog property.
+sh_test(
+    name = "fork_smoke",
+    timeout = "short",
+    srcs = ["fork-smoke-test.clj"],
+    args = [CUE_VERSION],
+    data = [
+        "fork-smoke-test.clj",
+        "//cue.mod:module_files",
+        "//kernel/catalog:catalog_files",
+        "//kernel/lib:defn.clj",
+        "//kernel/schema:schema_files",
+        "//kernel/spec/dispatch:dispatch_files",
+    ] + TENANT_CATALOG_FILES_LABELS,
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = [
+        "fork-smoke",
+        "spec",
+    ],
+)
+
+# AIDR-00061 + AIDR-00100: production-side lattice-schema vet.
+# Invokes `defn check latticeschema`, which internalizes the cue
+# vet pipeline against kernel/spec/lattice-schema.cue + the merged
+# lattice JSON. AIDR-00100 retired the .clj-driven `cue vet` path
+# along with the lattice_json_plain_gen genrule.
+sh_test(
+    name = "lattice_schema_vet",
+    timeout = "short",
+    srcs = ["lattice-schema-test.clj"],
+    args = ["$(rootpath //tenant/other/go/cmd/other:other)"],
+    data = [
+        "lattice-schema-test.clj",
+        "lattice-schema.cue",
+        "//cue.mod:module_files",
+        "//tenant/other/go/cmd/other:other",
+        "//kernel/lib:defn.clj",
+        "//var/lattice:_index.json",
+        "//var/lattice:shards",
+    ] + TENANT_SPEC_FILES_LABELS,
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = ["spec"],
+)
+
+# AIDR-00062 + AIDR-00100: production-side contracts vet. Invokes
+# `defn check contracts`, which internalizes the cue vet pipeline
+# against kernel/spec/contracts-schema.cue + known-shared + every
+# manual-files / convention-contracts shard + every per-generator
+# contract.cue + the merged lattice JSON. Detects orphans,
+# unannounced multi-writers, and claims that reference nonexistent
+# paths. AIDR-00100 retired the .clj-driven `cue vet` path along
+# with the lattice_json_plain_gen genrule.
+sh_test(
+    name = "contracts_vet",
+    timeout = "short",
+    srcs = ["contracts-vet-test.clj"],
+    args = ["$(rootpath //tenant/other/go/cmd/other:other)"],
+    data = [
+        "contracts-schema.cue",
+        "contracts-vet-test.clj",
+        "known-shared.cue",
+        ":convention_contracts_shards",
+        ":manual_files_shards",
+        "//cue.mod:module_files",
+        "//tenant/other/go/cmd/other:other",
+        "//tenant/library/go/lib/gen/app:contract.cue",
+        "//tenant/library/go/lib/gen/awsconfig:contract.cue",
+        "//tenant/library/go/lib/gen/awstofu:contract.cue",
+        "//tenant/library/go/lib/gen/buildsync:contract.cue",
+        "//tenant/library/go/lib/gen/cuetree:contract.cue",
+        "//tenant/library/go/lib/gen/discordbot:contract.cue",
+        "//tenant/library/go/lib/gen/fmt:contract.cue",
+        "//tenant/library/go/lib/gen/gmailbot:contract.cue",
+        "//tenant/library/go/lib/gen/gocmd:contract.cue",
+        "//tenant/library/go/lib/gen/gocmdcue:contract.cue",
+        "//tenant/library/go/lib/gen/gocmdparent:contract.cue",
+        "//tenant/library/go/lib/gen/golib:contract.cue",
+        "//tenant/library/go/lib/gen/image:contract.cue",
+        "//tenant/library/go/lib/gen/infra:contract.cue",
+        "//tenant/library/go/lib/gen/k3d:contract.cue",
+        "//tenant/library/go/lib/gen/k8s:contract.cue",
+        "//tenant/library/go/lib/gen/lattice:contract.cue",
+        "//tenant/library/go/lib/gen/matrixbot:contract.cue",
+        "//tenant/library/go/lib/gen/misetoml:contract.cue",
+        "//tenant/library/go/lib/gen/modulebazel:contract.cue",
+        "//tenant/library/go/lib/gen/oci:contract.cue",
+        "//tenant/library/go/lib/gen/operatorcrds:contract.cue",
+        "//tenant/library/go/lib/gen/restamp:contract.cue",
+        "//tenant/library/go/lib/gen/dispatchworker:contract.cue",
+        "//tenant/library/go/lib/gen/seed:contract.cue",
+        "//tenant/library/go/lib/gen/skill:contract.cue",
+        "//tenant/library/go/lib/gen/slackbot:contract.cue",
+        "//tenant/library/go/lib/gen/speclattice:contract.cue",
+        "//tenant/library/go/lib/gen/telegrambot:contract.cue",
+        "//tenant/library/go/lib/gen/versionsbzl:contract.cue",
+        "//kernel/lib:defn.clj",
+        "//var/lattice:_index.json",
+        "//var/lattice:shards",
+    ] + TENANT_SPEC_FILES_LABELS,
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = ["spec"],
+)
+
+# AIDR-00098 / AIDR-00099: production-side brick-collision check.
+# Invokes `defn check brickcollision`, which internalizes the cue eval
+# against the same input set as contracts_vet and runs
+# //tenant/library/go/lib/spec/brickcollision.Check. Headline parallel-dispatch
+# safety: any non-ancestor brick pair sharing a write path fails the
+# test. See //tenant/library/go/lib/spec/brickcollision for the Check function
+# and its 12 testscript fixtures.
+sh_test(
+    name = "brick_collision_vet",
+    timeout = "short",
+    srcs = ["brick-collision-vet-test.clj"],
+    args = ["$(rootpath //tenant/other/go/cmd/other:other)"],
+    data = [
+        "brick-collision-vet-test.clj",
+        "contracts-schema.cue",
+        "known-shared.cue",
+        ":manual_files_shards",
+        ":convention_contracts_shards",
+        "//cue.mod:module_files",
+        "//tenant/other/go/cmd/other:other",
+        "//tenant/library/go/lib/gen/app:contract.cue",
+        "//tenant/library/go/lib/gen/awsconfig:contract.cue",
+        "//tenant/library/go/lib/gen/awstofu:contract.cue",
+        "//tenant/library/go/lib/gen/buildsync:contract.cue",
+        "//tenant/library/go/lib/gen/cuetree:contract.cue",
+        "//tenant/library/go/lib/gen/discordbot:contract.cue",
+        "//tenant/library/go/lib/gen/fmt:contract.cue",
+        "//tenant/library/go/lib/gen/gmailbot:contract.cue",
+        "//tenant/library/go/lib/gen/gocmd:contract.cue",
+        "//tenant/library/go/lib/gen/gocmdcue:contract.cue",
+        "//tenant/library/go/lib/gen/gocmdparent:contract.cue",
+        "//tenant/library/go/lib/gen/golib:contract.cue",
+        "//tenant/library/go/lib/gen/image:contract.cue",
+        "//tenant/library/go/lib/gen/infra:contract.cue",
+        "//tenant/library/go/lib/gen/k3d:contract.cue",
+        "//tenant/library/go/lib/gen/k8s:contract.cue",
+        "//tenant/library/go/lib/gen/lattice:contract.cue",
+        "//tenant/library/go/lib/gen/matrixbot:contract.cue",
+        "//tenant/library/go/lib/gen/misetoml:contract.cue",
+        "//tenant/library/go/lib/gen/modulebazel:contract.cue",
+        "//tenant/library/go/lib/gen/oci:contract.cue",
+        "//tenant/library/go/lib/gen/operatorcrds:contract.cue",
+        "//tenant/library/go/lib/gen/restamp:contract.cue",
+        "//tenant/library/go/lib/gen/dispatchworker:contract.cue",
+        "//tenant/library/go/lib/gen/seed:contract.cue",
+        "//tenant/library/go/lib/gen/skill:contract.cue",
+        "//tenant/library/go/lib/gen/slackbot:contract.cue",
+        "//tenant/library/go/lib/gen/speclattice:contract.cue",
+        "//tenant/library/go/lib/gen/telegrambot:contract.cue",
+        "//tenant/library/go/lib/gen/versionsbzl:contract.cue",
+        "//kernel/lib:defn.clj",
+        "//var/lattice:_index.json",
+        "//var/lattice:shards",
+    ] + TENANT_SPEC_FILES_LABELS,
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = ["spec"],
+)
+
+# AIDR-00102 / SPEC-00352: cross-tenant literal vet. Invokes
+# `defn check crosstenantlit`, which derives leaf-tenant
+# classification + auth profiles + source files from the merged
+# lattice JSON and pulls brick_io.writes (the generator-output skip
+# set) from the same CUE eval as brick_collision_vet. Headline:
+# any leaf tenant naming another leaf or its profile values in
+# active code (outside the catalog-borrow declaration and outside
+# generator-output paths) fails the test. See
+# //tenant/library/go/lib/spec/crosstenantlit for the Check function and its
+# 12 testscript fixtures.
+sh_test(
+    name = "cross_tenant_lit_vet",
+    timeout = "short",
+    srcs = ["cross-tenant-lit-vet-test.clj"],
+    args = ["$(rootpath //tenant/other/go/cmd/other:other)"],
+    data = [
+        "contracts-schema.cue",
+        "cross-tenant-lit-vet-test.clj",
+        "known-shared.cue",
+        ":convention_contracts_shards",
+        ":manual_files_shards",
+        "//cue.mod:module_files",
+        "//tenant/other/go/cmd/other:other",
+        "//tenant/library/go/lib/gen/app:contract.cue",
+        "//tenant/library/go/lib/gen/awsconfig:contract.cue",
+        "//tenant/library/go/lib/gen/awstofu:contract.cue",
+        "//tenant/library/go/lib/gen/buildsync:contract.cue",
+        "//tenant/library/go/lib/gen/cuetree:contract.cue",
+        "//tenant/library/go/lib/gen/discordbot:contract.cue",
+        "//tenant/library/go/lib/gen/fmt:contract.cue",
+        "//tenant/library/go/lib/gen/gmailbot:contract.cue",
+        "//tenant/library/go/lib/gen/gocmd:contract.cue",
+        "//tenant/library/go/lib/gen/gocmdcue:contract.cue",
+        "//tenant/library/go/lib/gen/gocmdparent:contract.cue",
+        "//tenant/library/go/lib/gen/golib:contract.cue",
+        "//tenant/library/go/lib/gen/image:contract.cue",
+        "//tenant/library/go/lib/gen/infra:contract.cue",
+        "//tenant/library/go/lib/gen/k3d:contract.cue",
+        "//tenant/library/go/lib/gen/k8s:contract.cue",
+        "//tenant/library/go/lib/gen/lattice:contract.cue",
+        "//tenant/library/go/lib/gen/matrixbot:contract.cue",
+        "//tenant/library/go/lib/gen/misetoml:contract.cue",
+        "//tenant/library/go/lib/gen/modulebazel:contract.cue",
+        "//tenant/library/go/lib/gen/oci:contract.cue",
+        "//tenant/library/go/lib/gen/operatorcrds:contract.cue",
+        "//tenant/library/go/lib/gen/restamp:contract.cue",
+        "//tenant/library/go/lib/gen/dispatchworker:contract.cue",
+        "//tenant/library/go/lib/gen/seed:contract.cue",
+        "//tenant/library/go/lib/gen/skill:contract.cue",
+        "//tenant/library/go/lib/gen/slackbot:contract.cue",
+        "//tenant/library/go/lib/gen/speclattice:contract.cue",
+        "//tenant/library/go/lib/gen/telegrambot:contract.cue",
+        "//tenant/library/go/lib/gen/versionsbzl:contract.cue",
+        "//kernel/lib:defn.clj",
+        "//kernel/schema:schema_files",
+        "//kernel/spec/dispatch:dispatch_files",
+        "//var/lattice:_index.json",
+        "//var/lattice:shards",
+    ] + TENANT_AUTH_CUE_LABELS + TENANT_SPEC_FILES_LABELS,
+    env = {"BBS_LIB": "$(rootpath //kernel/lib:defn.clj)"},
+    tags = ["spec"],
+)
+
+fmt_test(
+    name = "build_bazel_fmt",
+    src = "BUILD.bazel",
+    tool = "buildifier",
+)
+
+tagged_file(
+    name = "build_bazel_tag",
+    src = "BUILD.bazel",
+    tags = [
+        "bazel",
+        "bazel-build",
+    ],
+)
+
+fmt_test(
+    name = "gen_files_txt_fmt",
+    src = "gen-files.txt",
+    tool = "binary",
+)
+
+tagged_file(
+    name = "gen_files_txt_tag",
+    src = "gen-files.txt",
+    tags = [
+        "generated",
+    ],
+)
+
+fmt_test(
+    name = "lattice_cue_fmt",
+    src = "lattice.cue",
+    tool = "cue",
+)
+
+fmt_test(
+    name = "mise_toml_fmt",
+    src = "mise.toml",
+    tool = "taplo",
+)
+
+tagged_file(
+    name = "lattice_cue_tag",
+    src = "lattice.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+fmt_test(
+    name = "sync_files_txt_fmt",
+    src = "sync-files.txt",
+    tool = "binary",
+)
+
+tagged_file(
+    name = "sync_files_txt_tag",
+    src = "sync-files.txt",
+    tags = [
+        "generated",
+    ],
+)
+
+tagged_file(
+    name = "mise_toml_tag",
+    src = "mise.toml",
+    tags = [
+        "config",
+        "mise",
+        "toml",
+    ],
+)
+
+fmt_test(
+    name = "lattice_schema_cue_fmt",
+    src = "lattice-schema.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "lattice_schema_cue_tag",
+    src = "lattice-schema.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+fmt_test(
+    name = "lattice_schema_test_clj_fmt",
+    src = "lattice-schema-test.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "lattice_schema_test_clj_tag",
+    src = "lattice-schema-test.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+fmt_test(
+    name = "fork_smoke_test_clj_fmt",
+    src = "fork-smoke-test.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "fork_smoke_test_clj_tag",
+    src = "fork-smoke-test.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+fmt_test(
+    name = "tenant_stamp_smoke_test_clj_fmt",
+    src = "tenant-stamp-smoke-test.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "tenant_stamp_smoke_test_clj_tag",
+    src = "tenant-stamp-smoke-test.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+fmt_test(
+    name = "empty_tenant_probe_test_clj_fmt",
+    src = "empty-tenant-probe-test.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "empty_tenant_probe_test_clj_tag",
+    src = "empty-tenant-probe-test.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+fmt_test(
+    name = "contracts_schema_cue_fmt",
+    src = "contracts-schema.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "contracts_schema_cue_tag",
+    src = "contracts-schema.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+fmt_test(
+    name = "contracts_vet_test_clj_fmt",
+    src = "contracts-vet-test.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "contracts_vet_test_clj_tag",
+    src = "contracts-vet-test.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+fmt_test(
+    name = "brick_collision_vet_test_clj_fmt",
+    src = "brick-collision-vet-test.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "brick_collision_vet_test_clj_tag",
+    src = "brick-collision-vet-test.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+fmt_test(
+    name = "cross_tenant_lit_vet_test_clj_fmt",
+    src = "cross-tenant-lit-vet-test.clj",
+    tool = "cljstyle",
+)
+
+tagged_file(
+    name = "cross_tenant_lit_vet_test_clj_tag",
+    src = "cross-tenant-lit-vet-test.clj",
+    tags = [
+        "clojure",
+        "script",
+    ],
+)
+
+fmt_test(
+    name = "known_shared_cue_fmt",
+    src = "known-shared.cue",
+    tool = "cue",
+)
+
+tagged_file(
+    name = "known_shared_cue_tag",
+    src = "known-shared.cue",
+    tags = [
+        "cue",
+        "source",
+    ],
+)
+
+# --- per-shard fmt_test + tagged_file (comprehension over shards) ---
+
+[fmt_test(
+    name = f.replace(".", "_") + "_fmt",
+    src = f,
+    tool = "cue",
+) for f in MANUAL_FILES_SHARDS + CONVENTION_CONTRACTS_SHARDS]
+
+[tagged_file(
+    name = f.replace(".", "_") + "_tag",
+    src = f,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for f in MANUAL_FILES_SHARDS + CONVENTION_CONTRACTS_SHARDS]
+
+[fmt_test(
+    name = "dispatch_cue_fmt",
+    src = src,
+    tool = "cue",
+) for src in glob(["dispatch.cue"], allow_empty = True)]
+
+[tagged_file(
+    name = "dispatch_cue_tag",
+    src = src,
+    tags = [
+        "cue",
+        "source",
+    ],
+) for src in glob(["dispatch.cue"], allow_empty = True)]

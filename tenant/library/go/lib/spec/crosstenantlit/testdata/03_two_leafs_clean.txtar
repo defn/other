@@ -1,0 +1,17 @@
+# Two leaves with disjoint profile values and no cross-references: clean.
+
+exec crosstenantlit input.json
+stdout '^ok$'
+
+-- input.json --
+{
+  "tenants": [
+    {"name": "defn", "path": "tenant/defn", "is_leaf": true, "profiles": ["defn-org"]},
+    {"name": "spiral", "path": "tenant/spiral", "is_leaf": true, "profiles": ["spiral-org"]}
+  ],
+  "files": [
+    {"path": "tenant/defn/x.cue", "tenant": "defn", "content": "thing: \"defn-org\"\n"},
+    {"path": "tenant/spiral/y.cue", "tenant": "spiral", "content": "thing: \"spiral-org\"\n"}
+  ],
+  "gen_writes": []
+}

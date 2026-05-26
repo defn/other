@@ -1,0 +1,4 @@
+# Generated from schema/versions.cue -- DO NOT EDIT.
+ARGOCD_VERSION = "3.4.2"
+ARGOCD_CHART_VERSION = "9.5.15"
+ARGOCD_CHART_SHA256 = "95502bea856e2e1e9bfbb7a5ab90d309970b4ffd098ff3dadb99188350768b9e"

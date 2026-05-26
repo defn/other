@@ -1,0 +1,37 @@
+@experiment(aliasv2,explicitopen,shortcircuit,try)
+
+package deps
+
+deps: [
+	"//tenant/library/go/lib/gen",
+	"//tenant/library/go/lib/gen/app",
+	"//tenant/library/go/lib/gen/awsconfig",
+	"//tenant/library/go/lib/gen/awstofu",
+	"//tenant/library/go/lib/gen/cuetree",
+	"//tenant/library/go/lib/gen/discordbot",
+	"//tenant/library/go/lib/gen/dispatchworker",
+	"//tenant/library/go/lib/gen/env",
+	"//tenant/library/go/lib/gen/fmt",
+	"//tenant/library/go/lib/gen/gmailbot",
+	"//tenant/library/go/lib/gen/matrixbot",
+	"//tenant/library/go/lib/gen/gocmd",
+	"//tenant/library/go/lib/gen/gocmdcue",
+	"//tenant/library/go/lib/gen/gocmdparent",
+	"//tenant/library/go/lib/gen/golib",
+	"//tenant/library/go/lib/gen/image",
+	"//tenant/library/go/lib/gen/infra",
+	"//tenant/library/go/lib/gen/k3d",
+	"//tenant/library/go/lib/gen/k8s",
+	"//tenant/library/go/lib/gen/misetoml",
+	"//tenant/library/go/lib/gen/modulebazel",
+	"//tenant/library/go/lib/gen/oci",
+	"//tenant/library/go/lib/gen/operatorcrds",
+	"//tenant/library/go/lib/gen/restamp",
+	"//tenant/library/go/lib/gen/seed",
+	"//tenant/library/go/lib/gen/skill",
+	"//tenant/library/go/lib/gen/slackbot",
+	"//tenant/library/go/lib/gen/speclattice",
+	"//tenant/library/go/lib/gen/versionsbzl",
+	"//tenant/library/go/lib/gen/telegrambot",
+	"//tenant/library/go/lib/log",
+]

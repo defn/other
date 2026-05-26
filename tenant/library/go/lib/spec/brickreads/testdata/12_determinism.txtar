@@ -1,0 +1,25 @@
+# Same input, two runs. Output must be byte-identical: the
+# (brick, sibling) pairs are sorted, and within each pair the Paths
+# are sorted, so map iteration order does not leak through.
+
+! exec brickreads input.json
+cp stdout out1
+
+! exec brickreads input.json
+cmp stdout out1
+
+-- input.json --
+{
+  "bricks": {
+    "a": {"path": "alpha"},
+    "b": {"path": "beta"},
+    "c": {"path": "gamma"},
+    "d": {"path": "delta"}
+  },
+  "brick_io": {
+    "a": {"reads": ["shared/x.cue"], "writes": ["alpha/out.cue"]},
+    "b": {"reads": [], "writes": ["shared/x.cue"]},
+    "c": {"reads": ["shared/y.cue"], "writes": ["gamma/out.cue"]},
+    "d": {"reads": [], "writes": ["shared/y.cue"]}
+  }
+}

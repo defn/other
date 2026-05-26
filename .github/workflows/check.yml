@@ -27,6 +27,12 @@ jobs:
         run: |
           mkdir -p ~/.config/mise
           ln -sf "$PWD/m/root/.config/mise/config.toml" ~/.config/mise/config.toml
+      - name: Generate machine-specific .bazelrc.workspace for this runner
+        # .bazelrc.workspace is per-machine + gitignored (bazel action_env
+        # HOME/PATH/mise paths). The bundled one carries the publisher's host
+        # paths; regenerate from this runner's $HOME + git root. Pure bash+git.
+        working-directory: m
+        run: ./bin/bootstrap-bazelrc
       - uses: jdx/mise-action@v2
         with:
           working_directory: m

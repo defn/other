@@ -11,18 +11,30 @@
 # invoking bazelisk, so the analysis cache survives tool upgrades.
 set -euo pipefail
 
-# Stable PATH: m/bin (for bbs shebang), mise shims (version-independent
+# Resolve paths from the actual environment, not a hardcoded dev user. On
+# the canonical devcontainer (HOME=/home/ubuntu, repo at $HOME/m) these
+# resolve to the same literal strings the old hardcoded values had, so the
+# Bazel analysis cache key is unchanged there; on any other machine/user
+# (CI's `runner`, a lifted fork) they resolve correctly. The cache is
+# per-machine (per output_base) anyway; the stability that matters is "no
+# VERSIONED tool dirs in PATH", which still holds (only mise shims, which
+# are version-independent). See AIDR-00149.
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOME_DIR="${HOME:?HOME must be set}"
+SHIMS_DIR="${MISE_DATA_DIR:-$HOME_DIR/.local/share/mise}/shims"
+
+# Stable PATH: this bin/ (for bbs shebang), mise shims (version-independent
 # tool resolution), and system paths. No versioned tool directories.
-STABLE_PATH="/home/ubuntu/m/bin:/home/ubuntu/.local/share/mise/shims:/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin"
+STABLE_PATH="$SELF_DIR:$SHIMS_DIR:$HOME_DIR/.local/bin:/usr/local/bin:/usr/bin:/bin"
 
 # Resolve bazelisk binary via mise shims (stable path, not versioned)
-BAZELISK="/home/ubuntu/.local/share/mise/shims/bazelisk"
+BAZELISK="$SHIMS_DIR/bazelisk"
 
 # Run bazelisk with a minimal, stable environment.
 # Only pass vars that Bazel or its toolchains actually need.
 exec env -i \
-	HOME="/home/ubuntu" \
-	USER="${USER:-ubuntu}" \
+	HOME="$HOME_DIR" \
+	USER="${USER:-$(id -un)}" \
 	PATH="$STABLE_PATH" \
 	TERM="${TERM:-xterm-256color}" \
 	"$BAZELISK" "$@"

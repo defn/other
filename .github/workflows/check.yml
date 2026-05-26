@@ -37,6 +37,7 @@ jobs:
       - name: Trust fork mise configs (persistent; survives bazel-runner env -i)
         working-directory: m
         run: |
+          mise trust --quiet ~/.config/mise/config.toml
           mise trust --quiet "$PWD/mise.toml"
           for f in $(find . -name mise.toml -not -path '*/bazel-*'); do mise trust --quiet "$f" || true; done
       - name: hatch

@@ -29,6 +29,11 @@ jobs:
       - uses: jdx/mise-action@v2
         with:
           working_directory: m
+      - name: Put mise binary on the bazel action PATH (~/.local/bin)
+        run: |
+          mkdir -p ~/.local/bin
+          ln -sf "$(command -v mise)" ~/.local/bin/mise
+          ~/.local/bin/mise --version
       - name: Trust fork mise configs (persistent; survives bazel-runner env -i)
         working-directory: m
         run: |

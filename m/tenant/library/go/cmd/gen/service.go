@@ -71,12 +71,14 @@ var phaseA = []struct {
 	{"skill", skill.Run},
 	{"operator-crds", operatorcrds.Run},
 	{"restamp", restamp.Run},
-	// AIDR-00132 OQ7 step 2 -- dispatchworker activated 2026-05-10
-	// after the BUILD.bazel-template migration completed. Emits one
-	// `dispatch.cue` per brick whose source dir is real, declaring
-	// `worker: dispatch.#BrickResult & {reads: [], writes: []}`.
-	// Catalog rewiring (OQ7 step 3) is the next sp-bricks task.
-	{"dispatch-worker", dispatchworker.Run},
+	// NOTE: dispatch-worker is intentionally NOT here. It reads brick
+	// SOURCE DIRS produced by the generators above (infra/app/k8s create
+	// tenant/<t>/infra/global, var/app/..., etc.) and writes a
+	// dispatch.cue only into dirs that already exist on disk. In the
+	// parallel phase its os.Stat(brickdir) races those dirs' creation, so
+	// for a FRESH fork (dirs not yet committed) the dispatch.cue is
+	// nondeterministically skipped -- the cold-CI "clean outside var/"
+	// drift (AIDR-00151). It runs sequentially after Phase A instead.
 }
 
 // PhaseAByContractName maps the contract `generator:` field (which
@@ -197,6 +199,17 @@ func RunFullPipeline(ctx *gen.Context) error {
 		if err != nil {
 			return err
 		}
+	}
+	// Phase A.5: dispatch-worker. Sequential, AFTER Phase A, because it
+	// stamps a dispatch.cue into every brick whose source dir exists on
+	// disk -- and those dirs are created by the Phase A generators
+	// (infra/app/k8s/...). Run in parallel it raced their creation and
+	// skipped freshly-generated bricks nondeterministically, leaving an
+	// uncommitted dispatch.cue to surface on the next pass (the fork
+	// cold-CI "clean outside var/" drift, AIDR-00151). Sequencing it here
+	// makes "source dir is real" a decision over Phase A's final state.
+	if err := dispatchworker.Run(ctx); err != nil {
+		return fmt.Errorf("gen dispatch-worker: %w", err)
 	}
 	// Stage new files so git ls-files sees them in Phase B
 	if err := ctx.GitAddAll(); err != nil {

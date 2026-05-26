@@ -554,15 +554,25 @@ versions: {
 		sync: []
 	}
 
-	// Decoupled from the tailscale-operator above: the operator's appVersion
-	// tracks container-image releases (tailscale/tailscale:vX), which run
-	// ahead of the macOS desktop client. The mise aqua CLI tool installs the
-	// macOS pkg, so it must pin to a version that has one. As of 2026-05-25
-	// the 1.98.x series has no macOS pkg (pkgs.tailscale.com 404s); 1.96.5 is
-	// the latest that does. Bump this when a macOS 1.98.x+ pkg ships.
+	// Structurally decoupled from the tailscale-operator above (the operator's
+	// appVersion tracks container-image releases, which can run ahead of the
+	// CLI pkg). The mise aqua CLI tool downloads a per-platform pkg from
+	// pkgs.tailscale.com, so it must pin a version with pkgs for BOTH macOS
+	// (host) and linux (CI + the Linux platform target). 1.96.5 was pruned
+	// upstream (pkgs.tailscale.com 404s, not in `mise ls-remote aqua:...`),
+	// which defn/other CI surfaced -- a pinned-then-pruned version that the
+	// host never re-downloaded (cached) so check-fork missed it (AIDR-00149).
+	// Must have pkgs for BOTH macOS (host: Tailscale-<v>-macos.pkg) and linux
+	// (CI: tailscale_<v>_amd64.tgz). tailscale prunes the two channels
+	// INDEPENDENTLY and erratically: 1.96.5 lost its linux .tgz; 1.98.3/1.96.4
+	// have linux but no macOS .pkg; 1.98.2 has BOTH (verified 2026-05-25) and
+	// is the latest such. Re-check both URLs before bumping -- `mise ls-remote`
+	// listing a version is necessary but NOT sufficient (it 200s on one
+	// platform, 404s on the other). defn/other CI surfaced the 1.96.5 linux
+	// prune the cached host had hidden (AIDR-00149).
 	tailscale_cli: #ToolVersion & {
-		version:    "1.96.5"
-		constraint: "mise aqua CLI tool; pinned to latest tailscale version with a macOS pkg (1.98.x has none yet). Decoupled from tailscale-operator appVersion."
+		version:    "1.98.2"
+		constraint: "mise aqua CLI tool; pinned to a tailscale version with pkgs on every platform (macOS host + linux CI). Decoupled from tailscale-operator appVersion."
 		sync: []
 	}
 

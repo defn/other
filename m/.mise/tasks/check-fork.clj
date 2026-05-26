@@ -122,8 +122,13 @@
       ;; Delete every tracked path (keep .git) so re-adding yields a real diff.
       (doseq [p (fs/list-dir clone) :when (not= ".git" (fs/file-name p))]
         (fs/delete-tree p))
-      ;; Copy the fork tree (sans its own .git) into the emptied clone.
-      (sh!! {} "rsync" "-a" "--exclude" ".git" (str fork-dir "/") (str clone "/"))
+      ;; Copy the fork tree (sans its own .git) UNDER m/, mirroring defn/defn's
+      ;; layout (git root contains m/, the monorepo lives in m/). bin/bbs bakes
+      ;; in ${CDUP}m/kernel/lib, so a flat publish (content at root) breaks the
+      ;; babashka classpath -- defn/other CI surfaced this. CI infra
+      ;; (.github/workflows, PORTABILITY-SOURCE.md) stays at the repo root.
+      (fs/create-dirs (str clone "/m"))
+      (sh!! {} "rsync" "-a" "--exclude" ".git" (str fork-dir "/") (str clone "/m/"))
       (spit (str clone "/PORTABILITY-SOURCE.md")
             (str "# Portability source\n\n"
                  "Bootstrapped fork of github.com/defn/defn, published by `mise run\n"
@@ -158,10 +163,22 @@
                  "          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost\n"
                  "          sudo docker image prune --all --force || true\n"
                  "          df -h /\n"
+                 "      - name: Surface the fork's mise toolset as global config\n"
+                 "        # defn keeps dotfiles in root/; the dev environment links\n"
+                 "        # ~/.config/mise/config.toml -> root/.config/mise/config.toml (the\n"
+                 "        # [tools] set). A fresh runner has no such link, so mise install\n"
+                 "        # would find no tools. Reproduce the link the devcontainer makes.\n"
+                 "        run: |\n"
+                 "          mkdir -p ~/.config/mise\n"
+                 "          ln -sf \"$PWD/m/root/.config/mise/config.toml\" ~/.config/mise/config.toml\n"
                  "      - uses: jdx/mise-action@v2\n"
+                 "        with:\n"
+                 "          working_directory: m\n"
                  "      - name: hatch (regenerate seed outputs for this fork's tenant set)\n"
+                 "        working-directory: m\n"
                  "        run: mise run hatch\n"
                  "      - name: check\n"
+                 "        working-directory: m\n"
                  "        run: mise run check\n"))
       (sh!! {:dir clone} "git" "add" "-A")
       (if (zero? (:exit (sh!!? {:dir clone} "git" "diff" "--cached" "--quiet")))

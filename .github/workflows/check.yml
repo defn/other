@@ -19,8 +19,12 @@ jobs:
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost
           sudo docker image prune --all --force || true
           df -h /
+      - name: Surface the fork's mise toolset as global config
+        run: |
+          mkdir -p ~/.config/mise
+          ln -sf "$PWD/root/.config/mise/config.toml" ~/.config/mise/config.toml
       - uses: jdx/mise-action@v2
-      - name: hatch (regenerate seed outputs for this fork's tenant set)
+      - name: hatch
         run: mise run hatch
       - name: check
         run: mise run check

@@ -41,9 +41,12 @@
                          jar (str cache-dir "/cljstyle-" version ".jar")
                          url (str "https://github.com/greglook/cljstyle/releases/download/"
                                   version "/cljstyle-" version ".jar")]
-                     (when-not (fs/exists? jar)
-                       (fs/create-dirs cache-dir)
-                       (sh! "curl" "-fsSL" "-o" jar url))
+                     ;; download-jar! is parallel-safe (per-process temp +
+                     ;; atomic rename); the plain `curl -o jar` here was the
+                     ;; cold-cache fmt-flake source bc4fccce missed -- it
+                     ;; hardened the fixer tasks but not fmt-check.clj, the
+                     ;; file bazel fmt_test actually runs. AIDR-00150.
+                     (download-jar! jar url)
                      (sh!! java-bin "-jar" jar "fix" copy-path))
       "google-java-format" (let [java-ver (or (System/getenv "JAVA_VERSION") "graalvm-community-25.0.2")
                                  java-bin (mise-bin (str "java@" java-ver) "java")
@@ -51,9 +54,7 @@
                                  jar (str cache-dir "/google-java-format-" version "-all-deps.jar")
                                  url (str "https://github.com/google/google-java-format/releases/download/v"
                                           version "/google-java-format-" version "-all-deps.jar")]
-                             (when-not (fs/exists? jar)
-                               (fs/create-dirs cache-dir)
-                               (sh! "curl" "-fsSL" "-o" jar url))
+                             (download-jar! jar url)
                              (sh!! java-bin "-jar" jar "--replace" copy-path))
       "cue"      (mise-x! mise-spec "cue" "fmt" copy-path)
       "dprint"   (let [bin    (mise-bin mise-spec "dprint")

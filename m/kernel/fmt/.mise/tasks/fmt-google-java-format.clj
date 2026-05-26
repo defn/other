@@ -12,13 +12,8 @@
                version "/google-java-format-" version "-all-deps.jar")
       java-ver (or (System/getenv "JAVA_VERSION") "graalvm-community-25.0.2")
       java-bin (mise-bin (str "java@" java-ver) "java")]
-  (when-not (fs/exists? jar)
-    (fs/create-dirs cache-dir)
-    (log-ok (str "downloading google-java-format " version))
-    ;; Atomic download: per-process temp + atomic rename, so parallel cold-cache
-    ;; fmt tests can't corrupt the shared jar via interleaved writes. Same race
-    ;; (and fix) as fmt-cljstyle.clj; see AIREF-00019.
-    (let [tmp (str jar "." (random-uuid) ".tmp")]
-      (sh! "curl" "-fsSL" "-o" tmp url)
-      (fs/move tmp jar {:replace-existing true :atomic-move true})))
+  ;; Shared parallel-safe download (atomic rename + retry); single fix
+  ;; point in defn lib so the cold-cache fmt-flake hardening stays in
+  ;; sync with fmt-check.clj + fmt-cljstyle.clj. See AIREF-00019.
+  (download-jar! jar url)
   (apply sh!! java-bin "-jar" jar *command-line-args*))

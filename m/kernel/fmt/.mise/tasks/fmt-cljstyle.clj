@@ -12,18 +12,10 @@
                version "/cljstyle-" version ".jar")
       java-ver (or (System/getenv "JAVA_VERSION") "graalvm-community-25.0.2")
       java-bin (mise-bin (str "java@" java-ver) "java")]
-  (when-not (fs/exists? jar)
-    (fs/create-dirs cache-dir)
-    (log-ok (str "downloading cljstyle " version))
-    ;; Download to a unique temp then atomic-rename. Bazel runs many .clj
-    ;; fmt tests in PARALLEL; on a cold cache they would otherwise all
-    ;; `curl -o jar` to the same path at once, interleaving writes / exposing
-    ;; a partial jar to a concurrent `java -jar` -> non-deterministic Exit 1.
-    ;; With per-process temp + atomic rename the jar is only ever observed
-    ;; complete. Surfaced as a flaky cljstyle fmt failure on defn/other CI
-    ;; (cold cache); the warm host -- and check-fork sharing its ~/.cache --
-    ;; hid it. See AIREF-00019.
-    (let [tmp (str jar "." (random-uuid) ".tmp")]
-      (sh! "curl" "-fsSL" "-o" tmp url)
-      (fs/move tmp jar {:replace-existing true :atomic-move true})))
+  ;; Parallel-safe download (atomic rename + retry) shared with
+  ;; fmt-check.clj and the gjf tasks -- single fix point in defn lib so
+  ;; the cold-cache fmt-flake hardening can't drift across copies again
+  ;; (AIDR-00150; the earlier bc4fccce fix lived only here, not on the
+  ;; fmt-check.clj path bazel actually runs). See AIREF-00019.
+  (download-jar! jar url)
   (apply sh!! java-bin "-jar" jar *command-line-args*))

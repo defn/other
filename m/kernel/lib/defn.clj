@@ -257,6 +257,32 @@
 (def parent fs/parent)
 
 
+(defn download-jar!
+  "Idempotently fetch a JAR to `dest`, safe under heavy parallelism.
+  No-op if dest already exists.
+
+  Bazel runs every fmt_test as its own sh_test in parallel, all sharing
+  the real ~/.cache (outside the sandbox). On a cold cache a naive
+  `curl -o dest` lets the parallel downloads interleave writes to the
+  same path AND exposes a partial jar to a concurrent `java -jar`, which
+  then dies with a non-deterministic Exit 1 -- the cold-cache fmt flake
+  defn/other CI keeps surfacing. Download to a per-process temp then
+  atomic-rename so `dest` is only ever observed complete; --retry rides
+  out transient github-release blips.
+
+  Single fix point (AIDR-00150): the original hardening (bc4fccce)
+  landed only in the fmt fixer tasks (fmt-cljstyle.clj /
+  fmt-google-java-format.clj), NOT in fmt-check.clj -- which is the file
+  the bazel fmt_test actually runs -- so the flake was never fixed on
+  the failing path. All four sites now call this."
+  [dest url]
+  (when-not (fs/exists? dest)
+    (fs/create-dirs (str (fs/parent dest)))
+    (let [tmp (str dest "." (random-uuid) ".tmp")]
+      (sh! "curl" "-fsSL" "--retry" "3" "--retry-all-errors" "-o" tmp url)
+      (fs/move tmp dest {:replace-existing true :atomic-move true}))))
+
+
 ;; JSON (from cheshire)
 
 (def parse-json json/parse-string)

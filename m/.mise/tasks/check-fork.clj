@@ -156,11 +156,42 @@
       (exit 1))))
 
 
+(defn assert-lift-idempotent!
+  "Re-run the SAME lift into the SAME target and assert it was a no-op.
+
+  A lift must be a deterministic function of its source so that a CI
+  re-lift from an unchanged source publishes nothing (AIDR-00150) --
+  the property the user wants every lift to guarantee. `defn bootstrap`
+  is rsync --delete + source-relative rewrite + stamp, then a commit in
+  the target parent; a second application of byte-identical inputs must
+  converge and its commit must be empty, leaving HEAD unmoved. So:
+  capture HEAD, re-bootstrap, compare. HEAD moved => the re-lift
+  committed real drift => NOT idempotent => fail the run loudly with the
+  offending diff. Cheap: bootstrap only, no second hatch."
+  [label tmpdir fork run-bootstrap! cue-module go-module]
+  (let [head-of (fn []
+                  (str/trim (:out (sh!!? {:dir tmpdir :out :string}
+                                         "git" "rev-parse" "HEAD"))))
+        before (head-of)]
+    (println)
+    (println (str label ": idempotency probe -- re-lifting into the same target"))
+    (run-bootstrap! fork cue-module go-module)
+    (let [after (head-of)]
+      (if (= before after)
+        (log-ok (str label ": lift is idempotent (re-bootstrap = no-op @ " (subs before 0 (min 8 (count before))) ")"))
+        (do
+          (log-err (str label ": LIFT NOT IDEMPOTENT -- re-bootstrap committed drift:"))
+          (sh!!? {:dir tmpdir :out :inherit :err :inherit}
+                 "git" "show" "--stat" after)
+          (cleanup-all)
+          (exit 1))))))
+
+
 (defn lift-and-build!
-  "One bootstrap lift into a fresh isolated temp dir OUTSIDE m/, then
-  pre-trust + hatch -- enough to make the fork a coherent, publishable
-  tree. Does NOT run `mise run check` (AIDR-00150 decision 3 -- cold GHA
-  validates).
+  "One bootstrap lift into a fresh isolated temp dir OUTSIDE m/, prove
+  the lift is idempotent (re-lift is a no-op), then pre-trust + hatch --
+  enough to make the fork a coherent, publishable tree. Does NOT run
+  `mise run check` (AIDR-00150 decision 3 -- cold GHA validates).
 
   The fork MUST land outside m/ (fs/create-temp-dir -> /var/folders/...).
   This isolation is the test's validity, not a convenience (AIDR-00148):
@@ -185,6 +216,11 @@
     (sh!! {:dir tmpdir} "git" "config" "user.email" "check-fork@defn.local")
     (sh!! {:dir tmpdir} "git" "config" "user.name" "check-fork")
     (run-bootstrap! fork cue-module go-module)
+    ;; Idempotency gate (AIDR-00150): every lift verifies that re-lifting
+    ;; the same source is a no-op, so CI never churns the fork on an
+    ;; unchanged source. Runs before hatch -- the bootstrap rename is the
+    ;; determinism-critical step and re-bootstrap is cheap.
+    (assert-lift-idempotent! label tmpdir fork run-bootstrap! cue-module go-module)
     (println)
     (println (str label ": pre-trust mise.toml files + hatch (regenerate seed outputs)"))
     (println)
@@ -349,12 +385,19 @@
       ;; (.github/workflows, PORTABILITY-SOURCE.md) stays at the repo root.
       (fs/create-dirs (str clone "/m"))
       (sh!! {} "rsync" "-a" "--exclude" ".git" (str fork-dir "/") (str clone "/m/"))
+      ;; NO per-run timestamp in this tracked file. The published tree
+      ;; must be a pure function of defn's source so a re-lift from an
+      ;; UNCHANGED defn is a no-op publish (the `git diff --cached
+      ;; --quiet` guard below fires -> no commit). A `published (UTC)`
+      ;; line here changes every run, defeating that guard and churning
+      ;; the fork on every CI cycle. The "when" lives in git metadata
+      ;; instead -- the commit message + the portability-green tag both
+      ;; carry utc-now, which is where a timestamp belongs.
       (spit (str clone "/PORTABILITY-SOURCE.md")
             (str "# Portability source\n\n"
                  source-desc ", published by `mise run check-fork` after a green\n"
                  "depth-2 fertility lift (AIDR-00150). Generated, not hand-edited.\n\n"
-                 "- defn source commit: `" source-sha "`\n"
-                 "- published (UTC): `" (utc-now) "`\n"))
+                 "- defn source commit: `" source-sha "`\n"))
       (fs/create-dirs (str clone "/.github/workflows"))
       (spit (str clone "/.github/workflows/check.yml") fork-check-workflow)
       (sh!! {:dir clone} "git" "add" "-A")

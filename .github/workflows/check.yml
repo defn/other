@@ -20,32 +20,43 @@ jobs:
           sudo docker image prune --all --force || true
           df -h /
       - name: Surface the fork's mise toolset as global config
+        # defn keeps dotfiles in root/; the dev environment links
+        # ~/.config/mise/config.toml -> root/.config/mise/config.toml (the
+        # [tools] set). A fresh runner has no such link, so mise install
+        # would find no tools. Reproduce the link the devcontainer makes.
         run: |
           mkdir -p ~/.config/mise
           ln -sf "$PWD/m/root/.config/mise/config.toml" ~/.config/mise/config.toml
       - name: Generate machine-specific .bazelrc.workspace for this runner
+        # .bazelrc.workspace is per-machine + gitignored (bazel action_env
+        # HOME/PATH/mise paths). The bundled one carries the publisher's host
+        # paths; regenerate from this runner's $HOME + git root. Pure bash+git.
         working-directory: m
         run: ./bin/bootstrap-bazelrc
       - uses: jdx/mise-action@v2
         with:
           working_directory: m
       - name: Put mise binary on the bazel action PATH (~/.local/bin)
+        # genrules resolve tools via `mise x <tool> --`, so the sandbox
+        # action PATH (~/.local/bin + shims) needs the mise binary itself.
         run: |
           mkdir -p ~/.local/bin
           ln -sf "$(command -v mise)" ~/.local/bin/mise
           ~/.local/bin/mise --version
       - name: Trust fork mise configs (persistent; survives bazel-runner env -i)
+        # bazel-runner runs bazelisk under env -i (drops MISE_TRUSTED_CONFIG_PATHS),
+        # so trust must be persisted in the user store. Includes the global
+        # ~/.config/mise/config.toml (the toolset) that genrule `mise x` loads.
         working-directory: m
         run: |
           mise trust --quiet ~/.config/mise/config.toml
           mise trust --quiet "$PWD/mise.toml"
           for f in $(find . -name mise.toml -not -path '*/bazel-*'); do mise trust --quiet "$f" || true; done
-      - name: hatch
+      - name: hatch (regenerate seed outputs for this fork's tenant set)
         working-directory: m
         run: mise run hatch
       - name: check
         working-directory: m
-        # --ignore-unclean-workarea matches check-fork's local in-fork run: a
-        # fresh fork regenerates volatile var/ gen outputs (lattice/manifest)
-        # that are machine-specific and not byte-stable across hosts (AIDR-00145).
+        # --ignore-unclean-workarea: a fresh fork regenerates volatile var/
+        # gen outputs (machine-specific lattice); matches the local in-fork run.
         run: mise run check -- --ignore-unclean-workarea

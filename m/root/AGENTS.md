@@ -33,6 +33,7 @@ See [AIREF-00001](airef/00001-documentation-organization.md) for the policy.
 - Repeatable manual work -> capture as airef, retire when folded into a brick (stamp / generator / mise task / `defn` subcommand). See [AIREF-00014](airef/00014-manual-work-as-airef-captured-then-folded-into-bricks.md).
 - Helm chart upgrades: discover-batch-stamp-hatch-evaluate-sync loop, one app at a time. See [AIREF-00017](airef/00017-helm-chart-upgrade-workflow.md).
 - Coordinator dispatch (`defn dispatch`) is the AIDR-00132 caller of `defn hatch --brick=...`; small humans -> K parallel sub-agents. See [AIREF-00018](airef/00018-coordinator-dispatch-walkthrough.md).
+- Fork portability has hard environment constraints (m/ layout, mise toolset/trust, no hardcoded /home/ubuntu, per-machine .bazelrc.workspace); a lift must satisfy them. See [AIREF-00019](airef/00019-portability-hard-constraints-the-fork-lift-contract.md).
 
 ## Live (retire-on-fold) AIREFs
 

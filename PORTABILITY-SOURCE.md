@@ -3,5 +3,5 @@
 Bootstrapped fork of github.com/defn/defn, published by `mise run
 check-fork` after a green portability check. Generated, not hand-edited.
 
-- defn source commit: `7e61301b6159b9f93231054019d84ea625c7cf7d`
-- published (UTC): `2026-05-26T02:04:55.102907Z`
+- defn source commit: `598c57828e8b06b88f43c210f3c8dde3af25f072`
+- published (UTC): `2026-05-26T03:03:48.441424Z`

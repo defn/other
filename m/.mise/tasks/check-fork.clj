@@ -180,12 +180,30 @@
                  "      - uses: jdx/mise-action@v2\n"
                  "        with:\n"
                  "          working_directory: m\n"
+                 "      - name: Put mise binary on the bazel action PATH (~/.local/bin)\n"
+                 "        # genrules resolve tools via `mise x <tool> --`, so the sandbox\n"
+                 "        # action PATH (~/.local/bin + shims) needs the mise binary itself.\n"
+                 "        run: |\n"
+                 "          mkdir -p ~/.local/bin\n"
+                 "          ln -sf \"$(command -v mise)\" ~/.local/bin/mise\n"
+                 "          ~/.local/bin/mise --version\n"
+                 "      - name: Trust fork mise configs (persistent; survives bazel-runner env -i)\n"
+                 "        # bazel-runner runs bazelisk under env -i (drops MISE_TRUSTED_CONFIG_PATHS),\n"
+                 "        # so trust must be persisted in the user store. Includes the global\n"
+                 "        # ~/.config/mise/config.toml (the toolset) that genrule `mise x` loads.\n"
+                 "        working-directory: m\n"
+                 "        run: |\n"
+                 "          mise trust --quiet ~/.config/mise/config.toml\n"
+                 "          mise trust --quiet \"$PWD/mise.toml\"\n"
+                 "          for f in $(find . -name mise.toml -not -path '*/bazel-*'); do mise trust --quiet \"$f\" || true; done\n"
                  "      - name: hatch (regenerate seed outputs for this fork's tenant set)\n"
                  "        working-directory: m\n"
                  "        run: mise run hatch\n"
                  "      - name: check\n"
                  "        working-directory: m\n"
-                 "        run: mise run check\n"))
+                 "        # --ignore-unclean-workarea: a fresh fork regenerates volatile var/\n"
+                 "        # gen outputs (machine-specific lattice); matches the local in-fork run.\n"
+                 "        run: mise run check -- --ignore-unclean-workarea\n"))
       (sh!! {:dir clone} "git" "add" "-A")
       (if (zero? (:exit (sh!!? {:dir clone} "git" "diff" "--cached" "--quiet")))
         (do (log-ok "publish: fork tree unchanged since last publish -- no commit")

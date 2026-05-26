@@ -20,23 +20,21 @@ jobs:
           sudo docker image prune --all --force || true
           df -h /
       - name: Surface the fork's mise toolset as global config
-        # defn keeps dotfiles in root/; the dev environment links
-        # ~/.config/mise/config.toml -> root/.config/mise/config.toml (the
-        # [tools] set). A fresh runner has no such link, so mise install
-        # would find no tools. Reproduce the link the devcontainer makes.
         run: |
           mkdir -p ~/.config/mise
           ln -sf "$PWD/m/root/.config/mise/config.toml" ~/.config/mise/config.toml
       - name: Generate machine-specific .bazelrc.workspace for this runner
-        # .bazelrc.workspace is per-machine + gitignored (bazel action_env
-        # HOME/PATH/mise paths). The bundled one carries the publisher's host
-        # paths; regenerate from this runner's $HOME + git root. Pure bash+git.
         working-directory: m
         run: ./bin/bootstrap-bazelrc
       - uses: jdx/mise-action@v2
         with:
           working_directory: m
-      - name: hatch (regenerate seed outputs for this fork's tenant set)
+      - name: Trust fork mise configs (persistent; survives bazel-runner env -i)
+        working-directory: m
+        run: |
+          mise trust --quiet "$PWD/mise.toml"
+          for f in $(find . -name mise.toml -not -path '*/bazel-*'); do mise trust --quiet "$f" || true; done
+      - name: hatch
         working-directory: m
         run: mise run hatch
       - name: check

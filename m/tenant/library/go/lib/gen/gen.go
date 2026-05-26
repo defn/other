@@ -231,6 +231,37 @@ func (c *Context) RefreshOverlay() error {
 	return nil
 }
 
+// ReloadCatalog rebuilds the overlay AND re-loads the catalog value
+// from the current on-disk state, so CatalogQuery reflects catalog
+// files written earlier in the same pipeline run.
+//
+// CatalogQuery reads c.Catalog, snapshotted at NewContext. But some
+// Phase A generators emit catalog files mid-run: infra.Run writes
+// tenant/<t>/catalog/gen-infra-bricks.cue declaring the infra bricks
+// (infra--global, infra--org). A generator that runs later in the SAME
+// process and queries bricks -- dispatch-worker, which stamps a
+// dispatch.cue into every brick dir -- otherwise reads the stale
+// pre-infra catalog and misses those bricks, so their dispatch.cue is
+// produced only on a LATER gen invocation. In a fork that surfaces as
+// cold-CI drift outside var/ (AIDR-00151). Reloading here converges the
+// infra -> bricks -> dispatch.cue chain in one pass, deterministically.
+//
+// Must NOT run while Phase A goroutines are live (it replaces c.Catalog
+// + c.overlay); call it after the WaitGroup, single-threaded.
+func (c *Context) ReloadCatalog() error {
+	if err := c.RefreshOverlay(); err != nil {
+		return err
+	}
+	cctx := cuecontext.New()
+	catalog, err := loadCUEPackageWithOverlay(cctx, c.WorkDir, "./kernel/catalog", nil, c.overlay)
+	if err != nil {
+		return fmt.Errorf("reload catalog: %w", err)
+	}
+	c.CUECtx = cctx
+	c.Catalog = catalog
+	return nil
+}
+
 // buildOverlay reads every tenant/<t>/{catalog,spec}/*.cue file and
 // returns a load.Overlay map that virtually projects them into the
 // matching kernel/{catalog,spec}/ directory. Filenames are uniqued

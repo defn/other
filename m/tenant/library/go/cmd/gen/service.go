@@ -208,6 +208,16 @@ func RunFullPipeline(ctx *gen.Context) error {
 	// uncommitted dispatch.cue to surface on the next pass (the fork
 	// cold-CI "clean outside var/" drift, AIDR-00151). Sequencing it here
 	// makes "source dir is real" a decision over Phase A's final state.
+	//
+	// Reload the catalog first: infra.Run wrote tenant/<t>/catalog/
+	// gen-infra-bricks.cue THIS run, declaring the infra--global/--org
+	// bricks; the NewContext catalog snapshot predates it, so without a
+	// reload dispatch-worker's bricks query misses them and their
+	// dispatch.cue is deferred to a later gen invocation -- the actual
+	// root cause of the drift (AIDR-00151).
+	if err := ctx.ReloadCatalog(); err != nil {
+		return fmt.Errorf("reload catalog before dispatch-worker: %w", err)
+	}
 	if err := dispatchworker.Run(ctx); err != nil {
 		return fmt.Errorf("gen dispatch-worker: %w", err)
 	}

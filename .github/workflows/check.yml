@@ -45,4 +45,7 @@ jobs:
         run: mise run hatch
       - name: check
         working-directory: m
-        run: mise run check
+        # --ignore-unclean-workarea matches check-fork's local in-fork run: a
+        # fresh fork regenerates volatile var/ gen outputs (lattice/manifest)
+        # that are machine-specific and not byte-stable across hosts (AIDR-00145).
+        run: mise run check -- --ignore-unclean-workarea

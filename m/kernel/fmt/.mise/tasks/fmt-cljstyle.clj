@@ -15,5 +15,15 @@
   (when-not (fs/exists? jar)
     (fs/create-dirs cache-dir)
     (log-ok (str "downloading cljstyle " version))
-    (sh! "curl" "-fsSL" "-o" jar url))
+    ;; Download to a unique temp then atomic-rename. Bazel runs many .clj
+    ;; fmt tests in PARALLEL; on a cold cache they would otherwise all
+    ;; `curl -o jar` to the same path at once, interleaving writes / exposing
+    ;; a partial jar to a concurrent `java -jar` -> non-deterministic Exit 1.
+    ;; With per-process temp + atomic rename the jar is only ever observed
+    ;; complete. Surfaced as a flaky cljstyle fmt failure on defn/other CI
+    ;; (cold cache); the warm host -- and check-fork sharing its ~/.cache --
+    ;; hid it. See AIREF-00019.
+    (let [tmp (str jar "." (random-uuid) ".tmp")]
+      (sh! "curl" "-fsSL" "-o" tmp url)
+      (fs/move tmp jar {:replace-existing true :atomic-move true})))
   (apply sh!! java-bin "-jar" jar *command-line-args*))

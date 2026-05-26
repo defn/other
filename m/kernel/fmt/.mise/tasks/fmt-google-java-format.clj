@@ -15,5 +15,10 @@
   (when-not (fs/exists? jar)
     (fs/create-dirs cache-dir)
     (log-ok (str "downloading google-java-format " version))
-    (sh! "curl" "-fsSL" "-o" jar url))
+    ;; Atomic download: per-process temp + atomic rename, so parallel cold-cache
+    ;; fmt tests can't corrupt the shared jar via interleaved writes. Same race
+    ;; (and fix) as fmt-cljstyle.clj; see AIREF-00019.
+    (let [tmp (str jar "." (random-uuid) ".tmp")]
+      (sh! "curl" "-fsSL" "-o" tmp url)
+      (fs/move tmp jar {:replace-existing true :atomic-move true})))
   (apply sh!! java-bin "-jar" jar *command-line-args*))

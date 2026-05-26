@@ -24,6 +24,10 @@ jobs:
           mkdir -p ~/.config/mise
           ln -sf "$PWD/root/.config/mise/config.toml" ~/.config/mise/config.toml
       - uses: jdx/mise-action@v2
+        with:
+          install: false
+      - name: Install tools (best-effort; some pinned CLIs are pruned upstream and aren't needed for check)
+        run: mise install --yes || true
       - name: hatch
         run: mise run hatch
       - name: check

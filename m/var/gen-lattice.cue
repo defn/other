@@ -3191,7 +3191,6 @@ lattice: {
 										type: "dir"
 										files: {
 											"BUILD.bazel": {type: "file", mode: "100644"}
-											"dispatch.cue": {type: "file", mode: "100644"}
 											"mise.toml": {type: "file", mode: "100644"}
 										}
 										dirs: {
@@ -3210,7 +3209,6 @@ lattice: {
 												type: "dir"
 												files: {
 													"BUILD.bazel": {type: "file", mode: "100644"}
-													"dispatch.cue": {type: "file", mode: "100644"}
 													"main.tf": {type: "file", mode: "100644"}
 													"mise.toml": {type: "file", mode: "100644"}
 												}
@@ -3219,7 +3217,6 @@ lattice: {
 												type: "dir"
 												files: {
 													"BUILD.bazel": {type: "file", mode: "100644"}
-													"dispatch.cue": {type: "file", mode: "100644"}
 												}
 											}
 										}

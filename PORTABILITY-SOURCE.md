@@ -1,7 +1,7 @@
 # Portability source
 
-Bootstrapped fork of github.com/defn/defn, published by `mise run
-check-fork` after a green portability check. Generated, not hand-edited.
+Bootstrapped fork of github.com/defn/defn, published by `mise run check-fork` after a green
+depth-2 fertility lift (AIDR-00150). Generated, not hand-edited.
 
-- defn source commit: `598c57828e8b06b88f43c210f3c8dde3af25f072`
-- published (UTC): `2026-05-26T03:03:48.441424Z`
+- defn source commit: `6f8e81d734beeac9179e419679288ede0811e721`
+- published (UTC): `2026-05-26T05:07:24.675066Z`

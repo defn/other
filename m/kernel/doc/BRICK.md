@@ -1,10 +1,12 @@
 # What a BRICK Is
 
-BRICK stands for Building block, Role, Implementation, Configuration, Kit. These five letters are not types of artifacts. They are registers, five lenses through which every typed artifact in the platform is viewed. BRICK is the universal grammar of platform artifacts. Types (`#Service`, `#Database`, `#Pipeline`, whatever you define) are the vocabulary. Every type, no matter what it is, has all five registers.
+BRICK is a brand name, not an acronym. Operationally, a brick is the platform's unit of artifact: every directory with a `BUILD.bazel` is a brick, classified by `#BrickKind` (relationship, interface, component, branch) and stamped/validated by the Midas + gen machinery. That is what BRICK means in the code -- see `kernel/schema/brick.cue`.
+
+The name originated from a five-register conceptual model -- block, role, implementation, configuration, kit -- retained below as design background. It is a useful lens for thinking about any artifact, but the letters are no longer treated as a literal expansion (earlier expansions drifted across docs; the brand name is now the fixed point).
 
 ---
 
-## The Five Registers
+## The Five Registers (design background)
 
 Building block is structural. A block is a directory with a BUILD file. It is the atom, the encapsulation boundary that says "this is a thing." Block does not care what the thing is or what it does. It draws the boundary. Git is the catalog of blocks: each commit hash is an identity, `bazel query` is the query interface, Sigstore and git history provide versioning and signing. There is no separate registry. The repo is the registry.
 

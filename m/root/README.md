@@ -56,9 +56,9 @@ boundary with the next layer.
 
 ## BRICK: The Directory Type System
 
-Every directory with a BUILD file is a **block** -- the atomic unit of
-the platform. Blocks are classified as BRICK: Blocks, Relationships,
-Interfaces, Components, Kit.
+BRICK is a brand name, not an acronym. Every directory with a BUILD file
+is a **brick** -- the atomic unit of the platform -- classified as one of
+relationship, interface, component, or branch (`#BrickKind`).
 
 **Interfaces** define contracts -- CUE schemas, Bazel rule definitions,
 type constraints. They govern what blocks must satisfy without producing
@@ -83,18 +83,18 @@ output of the build.
 
 ### Components in this repo
 
-| Component type           | Examples                                                                             | Produces                                         |
-| ------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| **Apps** (29)            | argocd, cert-manager, capsule, reloader, traefik, kyverno, ...                       | Rendered helm charts as OCI artifacts            |
-| **AWS** (1)              | aws (14 orgs, 117 accounts)                                                          | ~/.aws/config with SSO profiles                  |
-| **Environments** (3)     | defn-a, defn-b, defn-c                                                               | ArgoCD Application manifests, bootstrap YAML     |
-| **Platforms** (2)        | k3d-argocd, k3d-base                                                                 | Platform definitions (app sets per cluster type) |
-| **Clusters** (3)         | k3d/a, k3d/b, k3d/c                                                                  | k3d cluster configs, kubeconfig, mise.toml       |
-| **Formatters** (13)      | bazel, clojure, cue, go, java, json, markdown, python, shell, toml, typescript, yaml | Format rules per language                        |
-| **OCI images** (3)       | ubuntu, bazel-remote, registry                                                       | Digest-pinned external image references          |
-| **Container images** (6) | base, edge, postgres, redis, registry, bazel-remote                                  | Dockerfiles for devcontainer sidecars            |
-| **Catalog**              | apps, platforms, environments, aws orgs/accounts, mirrors, domains, chart versions   | Source of truth for all generation               |
-| **Schema**               | versions, app, aws, env, k8s, mirror, domain, brick, formatter                       | CUE type definitions                             |
+| Component type       | Examples                                                                             | Produces                                         |
+| -------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| **Apps**             | argocd, cert-manager, capsule, reloader, traefik, kyverno, ...                       | Rendered helm charts as OCI artifacts            |
+| **AWS**              | aws orgs + accounts                                                                  | ~/.aws/config with SSO profiles                  |
+| **Environments**     | defn-a, defn-b, defn-c                                                               | ArgoCD Application manifests, bootstrap YAML     |
+| **Platforms**        | k3d-argocd, k3d-base                                                                 | Platform definitions (app sets per cluster type) |
+| **Clusters**         | k3d/a, k3d/b, k3d/c                                                                  | k3d cluster configs, kubeconfig, mise.toml       |
+| **Formatters**       | bazel, clojure, cue, go, java, json, markdown, python, shell, toml, typescript, yaml | Format rules per language                        |
+| **OCI images**       | ubuntu, bazel-remote, registry                                                       | Digest-pinned external image references          |
+| **Container images** | base, edge, postgres, redis, registry, bazel-remote                                  | Dockerfiles for devcontainer sidecars            |
+| **Catalog**          | apps, platforms, environments, aws orgs/accounts, mirrors, domains, chart versions   | Source of truth for all generation               |
+| **Schema**           | versions, app, aws, env, k8s, mirror, domain, brick, formatter                       | CUE type definitions                             |
 
 ## Features
 

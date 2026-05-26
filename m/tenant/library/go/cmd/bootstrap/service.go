@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -210,12 +211,32 @@ func (s *Service) Run(ctx context.Context, cfg Config, onReady func(error)) erro
 		return verifyTarget(ctx, srcDir, target, sourceSHA)
 	}
 
+	// Detect the SOURCE workspace's own modules so the rename is
+	// source-relative (AIDR-00150): the first lift runs from defn
+	// (github.com/defn/other), but a second lift runs fork_O's binary
+	// from github.com/defn/other -- the rewrite must move *that*
+	// source's strings, not a hardcoded `defn`, or `other` leaks into
+	// `another`. validateModule guards the splice sites the same way it
+	// guards the target modules.
+	srcCueModule := readCUEModule(srcDir)
+	srcGoModule := readGoModule(srcDir)
+	if srcCueModule == "" || srcGoModule == "" {
+		return fmt.Errorf("cannot read source modules from %s (cue.mod/module.cue + go.mod)", srcDir)
+	}
+	if err := validateModule("source cue-module (from cue.mod/module.cue)", srcCueModule); err != nil {
+		return err
+	}
+	if err := validateModule("source go-module (from go.mod)", srcGoModule); err != nil {
+		return err
+	}
+
 	fmt.Println("defn bootstrap init:")
-	fmt.Printf("  source       %s\n", srcDir)
-	fmt.Printf("  target       %s\n", target)
-	fmt.Printf("  CUE module   %s\n", cfg.CueModule)
-	fmt.Printf("  Go module    %s\n", cfg.GoModule)
-	fmt.Printf("  source SHA   %s\n", sourceSHA)
+	fmt.Printf("  source        %s\n", srcDir)
+	fmt.Printf("  source module %s\n", srcCueModule)
+	fmt.Printf("  target        %s\n", target)
+	fmt.Printf("  CUE module    %s\n", cfg.CueModule)
+	fmt.Printf("  Go module     %s\n", cfg.GoModule)
+	fmt.Printf("  source SHA    %s\n", sourceSHA)
 	fmt.Println()
 
 	if err := rsyncBundle(ctx, srcDir, target); err != nil {
@@ -230,10 +251,13 @@ func (s *Service) Run(ctx context.Context, cfg Config, onReady func(error)) erro
 	if err := stampForkTenant(target, cfg.CueModule); err != nil {
 		return err
 	}
-	if err := rewriteModulePaths(target, cfg.CueModule, cfg.GoModule); err != nil {
+	if err := rewriteModulePaths(target, srcCueModule, srcGoModule, cfg.CueModule, cfg.GoModule); err != nil {
 		return err
 	}
-	if err := rewriteTenantCLIRefs(target); err != nil {
+	if err := rewriteTenantCLIRefs(target, path.Base(srcCueModule), path.Base(cfg.CueModule)); err != nil {
+		return err
+	}
+	if err := dropSourceLeafBin(target, path.Base(srcCueModule), path.Base(cfg.CueModule)); err != nil {
 		return err
 	}
 	if err := filterMiseToml(target); err != nil {
@@ -406,13 +430,19 @@ tagged_file(
 `
 
 // stampForkTenant lays down the fork's leaf tenant skeleton at
-// tenant/other/ inside target. Without these stubs the gen pipeline
-// reads kernel/catalog/catalog.cue's `*"defn"` default and stamps
+// tenant/<leaf>/ inside target, where leaf is the final path segment
+// of the fork's CUE module (github.com/defn/another -> "another").
+// Deriving the leaf from the module (AIDR-00150 decision 4) is what
+// makes a lift mint a NEW tenant rather than a renamed copy of the
+// source's leaf -- one knob (--cue-module) sets repo + module + tenant
+// + namesake CLI together. Without these stubs the gen pipeline reads
+// kernel/catalog/catalog.cue's `*"defn"` default and stamps
 // tenant/defn/... in a fork that has no defn source tree.
 func stampForkTenant(target, cueModule string) error {
-	catalogDir := filepath.Join(target, "tenant", "other", "catalog")
-	specDir := filepath.Join(target, "tenant", "other", "spec")
-	infraDir := filepath.Join(target, "tenant", "other", "infra")
+	leaf := path.Base(cueModule)
+	catalogDir := filepath.Join(target, "tenant", leaf, "catalog")
+	specDir := filepath.Join(target, "tenant", leaf, "spec")
+	infraDir := filepath.Join(target, "tenant", leaf, "infra")
 	if err := os.MkdirAll(catalogDir, 0o755); err != nil {
 		return err
 	}
@@ -426,10 +456,10 @@ func stampForkTenant(target, cueModule string) error {
 	// AIDR-00141 Stage 3.5d: stamp the fork's namesake CLI seed
 	// (main.go + app/ wiring + BUILD.bazel + bin/<fork> shim) so the
 	// fork can build its own `defn`-equivalent binary at //tenant/
-	// other/go/cmd/other:other and run `mise run hatch` on first
+	// <leaf>/go/cmd/<leaf>:<leaf> and run `mise run hatch` on first
 	// boot. The seed lists library cmds inline; gocmd regenerates
 	// modules.go on every subsequent hatch.
-	cliDir := filepath.Join(target, "tenant", "other", "go", "cmd", "other")
+	cliDir := filepath.Join(target, "tenant", leaf, "go", "cmd", leaf)
 	cliAppDir := filepath.Join(cliDir, "app")
 	if err := os.MkdirAll(cliAppDir, 0o755); err != nil {
 		return err
@@ -446,28 +476,28 @@ func stampForkTenant(target, cueModule string) error {
 		mode    os.FileMode
 	}{
 		{filepath.Join(catalogDir, "BUILD.bazel"), catalogBuildBazel, true, 0o644},
-		{filepath.Join(catalogDir, "auth.cue"), authCUE(cueModule), false, 0o644},
-		{filepath.Join(catalogDir, "default-tenant.cue"), defaultTenantCUE, false, 0o644},
+		{filepath.Join(catalogDir, "auth.cue"), authCUE(cueModule, leaf), false, 0o644},
+		{filepath.Join(catalogDir, "default-tenant.cue"), defaultTenantCUE(leaf), false, 0o644},
 		{filepath.Join(specDir, "BUILD.bazel"), specBuildBazel, true, 0o644},
-		{filepath.Join(specDir, "manual-files-infra.cue"), manualFilesInfraCUE, true, 0o644},
-		{filepath.Join(specDir, "manual-files-tenant.cue"), manualFilesTenantCUE, true, 0o644},
-		{filepath.Join(specDir, "manual-files-cli.cue"), manualFilesCLICUE, true, 0o644},
+		{filepath.Join(specDir, "manual-files-infra.cue"), manualFilesInfraCUE(leaf), true, 0o644},
+		{filepath.Join(specDir, "manual-files-tenant.cue"), manualFilesTenantCUE(leaf), true, 0o644},
+		{filepath.Join(specDir, "manual-files-cli.cue"), manualFilesCLICUE(leaf), true, 0o644},
 		{filepath.Join(infraDir, "mise.toml"), infraMiseToml, false, 0o644},
 		{filepath.Join(infraDir, ".mise", "tasks", "BUILD.bazel"), infraTasksBuildBazel, false, 0o644},
-		{filepath.Join(cliDir, "main.go"), cliMainGo(cueModule), false, 0o644},
+		{filepath.Join(cliDir, "main.go"), cliMainGo(cueModule, leaf), false, 0o644},
 		{filepath.Join(cliDir, "dispatch.cue"), cliDispatchCUE, false, 0o644},
-		{filepath.Join(cliDir, "BUILD.bazel"), cliBuildBazel, true, 0o644},
+		{filepath.Join(cliDir, "BUILD.bazel"), cliBuildBazel(leaf), true, 0o644},
 		{filepath.Join(cliAppDir, "app.go"), cliAppGo, false, 0o644},
 		{filepath.Join(cliAppDir, "modules.go"), cliModulesGo(cueModule), false, 0o644},
 		{filepath.Join(cliAppDir, "dispatch.cue"), cliDispatchCUE, false, 0o644},
-		{filepath.Join(cliAppDir, "BUILD.bazel"), cliAppBuildBazel, true, 0o644},
-		{filepath.Join(binDir, "other"), binForkShim, true, 0o755},
-		// Overwrite the bundled bin/BUILD.bazel so the fork's bin/other
+		{filepath.Join(cliAppDir, "BUILD.bazel"), cliAppBuildBazel(leaf), true, 0o644},
+		{filepath.Join(binDir, leaf), binForkShim(leaf), true, 0o755},
+		// Overwrite the bundled bin/BUILD.bazel so the fork's bin/<leaf>
 		// shim is bazel-tracked (defn's bundle ships a defn-only
 		// version). The replacement keeps every defn entry (the bundle
-		// ships bin/defn too as a compat shim) and adds the "other"
+		// ships bin/defn too as a compat shim) and adds the "<leaf>"
 		// entry next to it.
-		{filepath.Join(binDir, "BUILD.bazel"), forkBinBuildBazel, true, 0o644},
+		{filepath.Join(binDir, "BUILD.bazel"), forkBinBuildBazel(leaf), true, 0o644},
 		// var/ skeleton. The top-level var/ dir (AIDR-00145 D5.1) holds
 		// workspace-derived generator output and is NOT bundled -- the
 		// fork grows its own var/ on first hatch. But the two
@@ -479,12 +509,12 @@ func stampForkTenant(target, cueModule string) error {
 		{filepath.Join(target, "var", "lattice", "BUILD.bazel"), varLatticeBuildBazel, true, 0o644},
 		// Seed var/lattice/default_tenant.json so the fork's FIRST
 		// `defn-bin!` call (in the first hatch, before any lattice
-		// exists) resolves active-tenant to "other" and runs
-		// //tenant/other/go/cmd/other -- not the absent
+		// exists) resolves active-tenant to the fork's leaf and runs
+		// //tenant/<leaf>/go/cmd/<leaf> -- not the absent
 		// tenant/defn/go/cmd/defn. var/lattice isn't bundled, so this
 		// is a create, not a rewrite; hatch refreshes it on first run.
 		// (kernel/lib/defn.clj active-tenant reads this shard.)
-		{filepath.Join(target, "var", "lattice", "default_tenant.json"), `"other"`, true, 0o644},
+		{filepath.Join(target, "var", "lattice", "default_tenant.json"), `"` + leaf + `"`, true, 0o644},
 		// Seed an empty var/gen-chart-digests.cue (package catalog).
 		// kernel/catalog/BUILD.bazel's catalog_files filegroup references
 		// //var:gen-chart-digests.cue by explicit label; var/ isn't
@@ -638,7 +668,7 @@ tagged_file(
 tagged_package(exclude = ["BUILD.bazel"])
 `
 
-func authCUE(cueModule string) string {
+func authCUE(cueModule, leaf string) string {
 	return `@experiment(aliasv2,explicitopen,shortcircuit,try)
 
 package catalog
@@ -648,18 +678,20 @@ import "` + cueModule + `/kernel/schema"
 // Minimal leaf-tenant stub created by ` + "`defn bootstrap init`" + `
 // (AIDR-00138 stand-in). Replace with real tenant config when the
 // fork builds out its own tenancy.
-auth: schema.#Auth & {tofu: "other-org"}
+auth: schema.#Auth & {tofu: "` + leaf + `-org"}
 `
 }
 
-const defaultTenantCUE = `@experiment(aliasv2,explicitopen,shortcircuit,try)
+func defaultTenantCUE(leaf string) string {
+	return `@experiment(aliasv2,explicitopen,shortcircuit,try)
 
 package catalog
 
 // Pin default_tenant to this fork's leaf so gen stamps
-// tenant/other/... rather than the upstream default tenant/defn.
-default_tenant: "other"
+// tenant/` + leaf + `/... rather than the upstream default tenant/defn.
+default_tenant: "` + leaf + `"
 `
+}
 
 const specBuildBazel = `"""Per-tenant spec shards stamped by ` + "`defn bootstrap init`" + ` (AIDR-00138 D5.2)."""
 
@@ -689,28 +721,32 @@ tagged_file(
 tagged_package(exclude = ["BUILD.bazel"])
 `
 
-const manualFilesInfraCUE = `@experiment(aliasv2,explicitopen,shortcircuit,try)
+func manualFilesInfraCUE(leaf string) string {
+	return `@experiment(aliasv2,explicitopen,shortcircuit,try)
 
 package contracts
 
 _manualFileShards: infra: [
-	"tenant/other/spec/manual-files-infra.cue",
-	"tenant/other/infra/.mise/tasks/BUILD.bazel",
-	"tenant/other/infra/mise.toml",
+	"tenant/` + leaf + `/spec/manual-files-infra.cue",
+	"tenant/` + leaf + `/infra/.mise/tasks/BUILD.bazel",
+	"tenant/` + leaf + `/infra/mise.toml",
 ]
 `
+}
 
-const manualFilesTenantCUE = `@experiment(aliasv2,explicitopen,shortcircuit,try)
+func manualFilesTenantCUE(leaf string) string {
+	return `@experiment(aliasv2,explicitopen,shortcircuit,try)
 
 package contracts
 
-_manualFileShards: "tenant-other": [
-	"tenant/other/spec/manual-files-infra.cue",
-	"tenant/other/spec/manual-files-tenant.cue",
-	"tenant/other/spec/BUILD.bazel",
-	"tenant/other/catalog/BUILD.bazel",
+_manualFileShards: "tenant-` + leaf + `": [
+	"tenant/` + leaf + `/spec/manual-files-infra.cue",
+	"tenant/` + leaf + `/spec/manual-files-tenant.cue",
+	"tenant/` + leaf + `/spec/BUILD.bazel",
+	"tenant/` + leaf + `/catalog/BUILD.bazel",
 ]
 `
+}
 
 const infraMiseToml = `[env]
 TF_PLUGIN_CACHE_DIR = "{{env.HOME}}/.terraform.d/plugin-cache"
@@ -735,19 +771,20 @@ tagged_file(
 `
 
 // AIDR-00141 Stage 3.5d: fork namesake-CLI seed. stampForkTenant
-// writes these so the fork can build //tenant/other/go/cmd/other:other
+// writes these so the fork can build //tenant/<leaf>/go/cmd/<leaf>:<leaf>
 // on first boot. The seed enumerates library cmds inline so the
 // binary works before gocmd has had a chance to regenerate modules.go;
 // every subsequent hatch refreshes modules.go from the catalog.
 //
-// "Other" is the fork's hardcoded tenant name (matches the rest of
-// stampForkTenant). When forks become catalog-configurable, derive
-// from the fork's catalog entry instead.
+// leaf is the fork's tenant name, derived from the CUE module's final
+// segment (AIDR-00150). The build files below splice it into bazel
+// target names and importpaths directly; module strings stay as the
+// source module and are moved by rewriteModulePaths afterward.
 
-func cliMainGo(cueModule string) string {
+func cliMainGo(cueModule, leaf string) string {
 	return `package main
 
-import "` + cueModule + `/m/tenant/other/go/cmd/other/app"
+import "` + cueModule + `/m/tenant/` + leaf + `/go/cmd/` + leaf + `/app"
 
 func main() {
 	app.Run()
@@ -872,21 +909,22 @@ worker: dispatch.#BrickResult & {
 }
 `
 
-const cliBuildBazel = `load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+func cliBuildBazel(leaf string) string {
+	return `load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//kernel:fmt.bzl", "fmt_test")
 load("//kernel:tagged.bzl", "tagged_file")
 
 go_library(
-    name = "other_lib",
+    name = "` + leaf + `_lib",
     srcs = ["main.go"],
-    importpath = "github.com/defn/other/m/tenant/other/go/cmd/other",
+    importpath = "github.com/defn/other/m/tenant/` + leaf + `/go/cmd/` + leaf + `",
     visibility = ["//visibility:private"],
-    deps = ["//tenant/other/go/cmd/other/app"],
+    deps = ["//tenant/` + leaf + `/go/cmd/` + leaf + `/app"],
 )
 
 go_binary(
-    name = "other",
-    embed = [":other_lib"],
+    name = "` + leaf + `",
+    embed = [":` + leaf + `_lib"],
     visibility = ["//visibility:public"],
 )
 
@@ -900,16 +938,18 @@ tagged_file(name = "main_go_tag", src = "main.go", tags = ["go", "source"])
 
 [tagged_file(name = "dispatch_cue_tag", src = src, tags = ["cue", "source"]) for src in glob(["dispatch.cue"], allow_empty = True)]
 `
+}
 
-const cliAppBuildBazel = `load("@io_bazel_rules_go//go:def.bzl", "go_library")
+func cliAppBuildBazel(leaf string) string {
+	return `load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//kernel:fmt.bzl", "fmt_test")
 load("//kernel:tagged.bzl", "tagged_file")
 
 go_library(
     name = "app",
     srcs = ["app.go", "modules.go"],
-    importpath = "github.com/defn/other/m/tenant/other/go/cmd/other/app",
-    visibility = ["//tenant/other/go/cmd/other:__pkg__"],
+    importpath = "github.com/defn/other/m/tenant/` + leaf + `/go/cmd/` + leaf + `/app",
+    visibility = ["//tenant/` + leaf + `/go/cmd/` + leaf + `:__pkg__"],
     deps = [
         "//tenant/library/go/cmd/bootstrap",
         "//tenant/library/go/cmd/build",
@@ -946,8 +986,10 @@ tagged_file(name = "modules_go_tag", src = "modules.go", tags = ["generated", "g
 
 [tagged_file(name = "dispatch_cue_tag", src = src, tags = ["cue", "source"]) for src in glob(["dispatch.cue"], allow_empty = True)]
 `
+}
 
-const manualFilesCLICUE = `@experiment(aliasv2,explicitopen,shortcircuit,try)
+func manualFilesCLICUE(leaf string) string {
+	return `@experiment(aliasv2,explicitopen,shortcircuit,try)
 
 // Manual allow-list shard stamped by ` + "`defn bootstrap init`" + ` for the
 // fork's namesake CLI seed (AIDR-00141 Stage 3.5d). main.go + app/
@@ -956,34 +998,43 @@ const manualFilesCLICUE = `@experiment(aliasv2,explicitopen,shortcircuit,try)
 package contracts
 
 _manualFileShards: cli: [
-	"tenant/other/spec/manual-files-cli.cue",
-	"tenant/other/go/cmd/other/BUILD.bazel",
-	"tenant/other/go/cmd/other/dispatch.cue",
-	"tenant/other/go/cmd/other/main.go",
-	"tenant/other/go/cmd/other/app/BUILD.bazel",
-	"tenant/other/go/cmd/other/app/app.go",
-	"tenant/other/go/cmd/other/app/dispatch.cue",
-	"tenant/other/go/cmd/other/app/modules.go",
-	"bin/other",
+	"tenant/` + leaf + `/spec/manual-files-cli.cue",
+	"tenant/` + leaf + `/go/cmd/` + leaf + `/BUILD.bazel",
+	"tenant/` + leaf + `/go/cmd/` + leaf + `/dispatch.cue",
+	"tenant/` + leaf + `/go/cmd/` + leaf + `/main.go",
+	"tenant/` + leaf + `/go/cmd/` + leaf + `/app/BUILD.bazel",
+	"tenant/` + leaf + `/go/cmd/` + leaf + `/app/app.go",
+	"tenant/` + leaf + `/go/cmd/` + leaf + `/app/dispatch.cue",
+	"tenant/` + leaf + `/go/cmd/` + leaf + `/app/modules.go",
+	"bin/` + leaf + `",
 ]
 `
+}
 
-const forkBinBuildBazel = `load("//kernel:fmt.bzl", "fmt_test")
+func forkBinBuildBazel(leaf string) string {
+	// exports_files takes a string-only list, which buildifier sorts
+	// alphabetically -- so the fork's leaf entry must be inserted in
+	// sorted position (for leaf="another" it sorts ahead of
+	// "bazel-runner"; for leaf="other" it lands where it always did).
+	// Emitting it pre-sorted keeps the stamped file buildifier-clean on
+	// the fork's first fmt_test. The per-file fmt_test / tagged_file
+	// rules below are top-level statements buildifier does NOT reorder,
+	// so the leaf rules can stay where "other" used to sit.
+	exports := []string{"bazel-runner", "bbs", "bootstrap-bazelrc", "defn", "k3k", leaf, "yae"}
+	sort.Strings(exports)
+	var exportLines strings.Builder
+	for _, e := range exports {
+		exportLines.WriteString("    \"" + e + "\",\n")
+	}
+	return `load("//kernel:fmt.bzl", "fmt_test")
 load("//kernel:tagged.bzl", "tagged_file")
 
 # All git-tracked files in this package must be registered with Bazel.
-# bin/other is the fork's namesake-CLI shim (AIDR-00141 Stage 3.5d);
+# bin/` + leaf + ` is the fork's namesake-CLI shim (AIDR-00141 Stage 3.5d);
 # bin/defn rides via the kernel bundle as a compat alias that also
 # resolves to the active tenant's CLI through ` + "`mise run defn`" + `.
 exports_files([
-    "bazel-runner",
-    "bbs",
-    "bootstrap-bazelrc",
-    "defn",
-    "k3k",
-    "other",
-    "yae",
-])
+` + exportLines.String() + `])
 
 fmt_test(name = "build_bazel_fmt", src = "BUILD.bazel", tool = "buildifier")
 fmt_test(name = "bbs_fmt", src = "bbs", tool = "shfmt")
@@ -992,7 +1043,7 @@ fmt_test(name = "bazel_runner_fmt", src = "bazel-runner", tool = "shfmt")
 fmt_test(name = "bootstrap_bazelrc_fmt", src = "bootstrap-bazelrc", tool = "shfmt")
 fmt_test(name = "defn_fmt", src = "defn", tool = "cljstyle")
 fmt_test(name = "k3k_fmt", src = "k3k", tool = "shfmt")
-fmt_test(name = "other_fmt", src = "other", tool = "cljstyle")
+fmt_test(name = "` + leaf + `_fmt", src = "` + leaf + `", tool = "cljstyle")
 
 tagged_file(name = "build_bazel_tag", src = "BUILD.bazel", tags = ["bazel-build"])
 tagged_file(name = "bazel_runner_tag", src = "bazel-runner", tags = ["script", "shell"])
@@ -1001,7 +1052,7 @@ tagged_file(name = "bbs_tag", src = "bbs", tags = ["script", "shell"])
 tagged_file(name = "yae_tag", src = "yae", tags = ["script", "shell"])
 tagged_file(name = "defn_tag", src = "defn", tags = ["clojure", "script"])
 tagged_file(name = "k3k_tag", src = "k3k", tags = ["script", "shell"])
-tagged_file(name = "other_tag", src = "other", tags = ["clojure", "script"])
+tagged_file(name = "` + leaf + `_tag", src = "` + leaf + `", tags = ["clojure", "script"])
 
 [fmt_test(
     name = "dispatch_cue_fmt",
@@ -1015,9 +1066,11 @@ tagged_file(name = "other_tag", src = "other", tags = ["clojure", "script"])
     tags = ["cue", "source"],
 ) for src in glob(["dispatch.cue"], allow_empty = True)]
 `
+}
 
-const binForkShim = `#!/usr/bin/env bbs
-;; bin/other -- fork namesake CLI shim (AIDR-00141 Stage 3.5d).
+func binForkShim(leaf string) string {
+	return `#!/usr/bin/env bbs
+;; bin/` + leaf + ` -- fork namesake CLI shim (AIDR-00141 Stage 3.5d).
 ;; Delegates to ` + "`mise run defn`" + `, which reads default_tenant from the
 ;; lattice and builds //tenant/<t>/go/cmd/<t>:<t> -- the same task
 ;; serves every tenant's namesake CLI.
@@ -1026,38 +1079,44 @@ const binForkShim = `#!/usr/bin/env bbs
 
 (p/exec (into ["mise" "run" "defn" "--"] *command-line-args*))
 `
+}
 
-// rewriteModulePaths walks the target tree and replaces upstream
-// CUE+Go module strings with the fork's modules.
+// rewriteModulePaths walks the target tree and replaces the SOURCE
+// workspace's CUE+Go module strings with the fork's modules. The
+// source strings are detected from the source workspace (defn for the
+// first lift, other for the second), not hardcoded -- otherwise a
+// `other -> another` lift would leave every `github.com/defn/other`
+// reference untouched and `other` would leak into `another`
+// (AIDR-00150).
 //
 // Order matters: rewrite the longer Go module path FIRST so it
 // doesn't get half-clobbered by the CUE rewrite. .pb.go files embed
 // length-prefixed protobuf descriptors whose binary string contains
 // the upstream package name; a naive text replace corrupts the
 // length prefix, so those are skipped.
-func rewriteModulePaths(target, cueModule, goModule string) error {
-	return filepath.WalkDir(target, func(path string, d fs.DirEntry, err error) error {
+func rewriteModulePaths(target, srcCueModule, srcGoModule, cueModule, goModule string) error {
+	return filepath.WalkDir(target, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
 			return nil
 		}
-		if !shouldRewrite(path) {
+		if !shouldRewrite(p) {
 			return nil
 		}
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(p)
 		if err != nil {
-			return fmt.Errorf("read %s: %w", path, err)
+			return fmt.Errorf("read %s: %w", p, err)
 		}
 		orig := string(data)
-		next := strings.ReplaceAll(orig, "github.com/defn/other/m", goModule)
-		next = strings.ReplaceAll(next, "github.com/defn/other", cueModule)
+		next := strings.ReplaceAll(orig, srcGoModule, goModule)
+		next = strings.ReplaceAll(next, srcCueModule, cueModule)
 		if next == orig {
 			return nil
 		}
-		if err := os.WriteFile(path, []byte(next), 0o644); err != nil {
-			return fmt.Errorf("write %s: %w", path, err)
+		if err := os.WriteFile(p, []byte(next), 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", p, err)
 		}
 		return nil
 	})
@@ -1075,55 +1134,81 @@ func shouldRewrite(path string) bool {
 	return rewriteBasenames[name]
 }
 
-// tenantCLIRefRe matches `tenant/defn/go/cmd/defn` only as a
-// path-component-bounded substring -- preceded by `/` or `"` and
-// followed by `/`, `:`, or `"`. Used by rewriteTenantCLIRefs to
-// rewrite bazel labels, go import strings, and bazel-bin paths
-// without silently corrupting a future bundle file that mentions
-// the literal in a docstring / error message / sample text. Per
-// AIDR-00144 security review (minor).
-var tenantCLIRefRe = regexp.MustCompile(`([/"])tenant/defn/go/cmd/defn([/:"])`)
-
-// rewriteTenantCLIRefs replaces upstream tenant/defn/go/cmd/defn
-// references with tenant/other/go/cmd/other so the fork's bundled
-// kernel/spec/BUILD.bazel + other Bazel files target the fork's
-// namesake CLI instead of defn's (which doesn't exist in the fork).
-// Per AIDR-00141 Stage 3.5d. Only the specific cmd path is rewritten;
-// other "tenant/defn/" references (catalog seeds, etc.) are left
-// alone because they belong to defn-specific subtrees that the fork
-// won't have but that won't break Bazel analysis (no targets there).
-func rewriteTenantCLIRefs(target string) error {
-	return filepath.WalkDir(target, func(path string, d fs.DirEntry, err error) error {
+// rewriteTenantCLIRefs replaces the SOURCE tenant's namesake-CLI
+// references (tenant/<srcLeaf>/go/cmd/<srcLeaf>) with the target's
+// (tenant/<tgtLeaf>/go/cmd/<tgtLeaf>) so the fork's bundled
+// kernel/spec/BUILD.bazel + other inherited Bazel files target the
+// fork's namesake CLI instead of the source's (which doesn't exist in
+// the fork). Per AIDR-00141 Stage 3.5d; made source-relative in
+// AIDR-00150 (the source leaf is `defn` on the first lift, `other` on
+// the second).
+//
+// The cmd path is bounded as a path component -- preceded by `/` or
+// `"` and followed by `/`, `:`, or `"` -- so the rewrite cannot
+// silently corrupt a bundle file that mentions the literal in a
+// docstring / error message / sample text (AIDR-00144 security review,
+// minor). Only the specific cmd path is rewritten; other
+// `tenant/<srcLeaf>/` references (catalog seeds, etc.) are left alone
+// because they belong to source-specific subtrees the fork won't have
+// but that won't break Bazel analysis (no targets there).
+//
+// When srcLeaf == tgtLeaf (e.g. a re-bootstrap into a same-named fork)
+// the rewrite is a no-op; the cheap byte-compare guards the write.
+func rewriteTenantCLIRefs(target, srcLeaf, tgtLeaf string) error {
+	srcCmd := "tenant/" + srcLeaf + "/go/cmd/" + srcLeaf
+	tgtCmd := "tenant/" + tgtLeaf + "/go/cmd/" + tgtLeaf
+	// Anchored rewrite for bazel-label / go-import / bazel-bin path
+	// forms; refuses to corrupt unanchored mentions.
+	re := regexp.MustCompile(`([/"])` + regexp.QuoteMeta(srcCmd) + `([/:"])`)
+	return filepath.WalkDir(target, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
 			return nil
 		}
-		if !shouldRewrite(path) {
+		if !shouldRewrite(p) {
 			return nil
 		}
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(p)
 		if err != nil {
-			return fmt.Errorf("read %s: %w", path, err)
+			return fmt.Errorf("read %s: %w", p, err)
 		}
 		orig := string(data)
-		// Longest match first so `tenant/other/go/cmd/other:other` is fully
-		// rewritten to `tenant/other/go/cmd/other:other` before the
-		// shorter regex match would leave `:defn` behind.
-		next := strings.ReplaceAll(orig, "tenant/other/go/cmd/other:other", "tenant/other/go/cmd/other:other")
-		next = strings.ReplaceAll(next, "tenant/other/go/cmd/other/other_/other", "tenant/other/go/cmd/other/other_/other")
-		// Anchored rewrite for the remaining bazel-label / go-import /
-		// bazel-bin path forms; refuses to corrupt unanchored mentions.
-		next = tenantCLIRefRe.ReplaceAllString(next, "${1}tenant/other/go/cmd/other${2}")
+		// Longest match first so `tenant/<l>/go/cmd/<l>:<l>` is fully
+		// rewritten before the shorter regex match would leave `:<srcLeaf>`
+		// behind.
+		next := strings.ReplaceAll(orig, srcCmd+":"+srcLeaf, tgtCmd+":"+tgtLeaf)
+		next = strings.ReplaceAll(next, srcCmd+"/"+srcLeaf+"_/"+srcLeaf, tgtCmd+"/"+tgtLeaf+"_/"+tgtLeaf)
+		next = re.ReplaceAllString(next, "${1}"+tgtCmd+"${2}")
 		if next == orig {
 			return nil
 		}
-		if err := os.WriteFile(path, []byte(next), 0o644); err != nil {
-			return fmt.Errorf("write %s: %w", path, err)
+		if err := os.WriteFile(p, []byte(next), 0o644); err != nil {
+			return fmt.Errorf("write %s: %w", p, err)
 		}
 		return nil
 	})
+}
+
+// dropSourceLeafBin removes the SOURCE tenant's namesake CLI shim
+// (bin/<srcLeaf>) that the wholesale bin/ rsync carries into the fork.
+// The fork stamps its own bin/<tgtLeaf> and a fresh bin/BUILD.bazel
+// that lists only <tgtLeaf> + defn + the tooling shims, so a leftover
+// bin/<srcLeaf> (e.g. bin/other in an `another` fork) is structural
+// `other`-leaks-into-`another` residue AND orphans the fork's
+// tagged_file coverage. bin/defn is exempt: it rides every fork as a
+// permanent compat alias (forkBinBuildBazel always lists it). For the
+// first lift srcLeaf == "defn", so this is a no-op. Per AIDR-00150.
+func dropSourceLeafBin(target, srcLeaf, tgtLeaf string) error {
+	if srcLeaf == tgtLeaf || srcLeaf == "defn" {
+		return nil
+	}
+	p := filepath.Join(target, "bin", srcLeaf)
+	if err := os.Remove(p); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("drop source leaf bin %s: %w", p, err)
+	}
+	return nil
 }
 
 // filterMiseToml drops `tenant/{boot,defn}/` lines from
@@ -1341,7 +1426,7 @@ func verifyTarget(ctx context.Context, srcDir, target, srcHeadSHA string) error 
 		fmt.Printf("verify: (cannot load generator claims: %v -- using stamp-only allow-list)\n", err)
 		claims = nil
 	}
-	allowList := buildAllowList(claims)
+	allowList := buildAllowList(claims, path.Base(cueModule))
 
 	forkEdited, err := classifyForkEdits(tempTarget, target, allowList)
 	if err != nil {
@@ -1537,7 +1622,26 @@ func rederiveExpectedTarget(ctx context.Context, worktreeDir, tempTarget, cueMod
 	if err := stampForkTenant(tempTarget, cueModule); err != nil {
 		return err
 	}
-	if err := rewriteModulePaths(tempTarget, cueModule, goModule); err != nil {
+	// Source-relative rename (AIDR-00150): the worktree IS the source at
+	// the recorded SHA, so detect its modules rather than assuming defn
+	// -- a fork lifted from `other` must re-derive against other's
+	// strings or every path would falsely classify as fork-edited.
+	srcCueModule := readCUEModule(worktreeDir)
+	srcGoModule := readGoModule(worktreeDir)
+	if srcCueModule == "" || srcGoModule == "" {
+		return fmt.Errorf("cannot read source modules from worktree %s", worktreeDir)
+	}
+	if err := rewriteModulePaths(tempTarget, srcCueModule, srcGoModule, cueModule, goModule); err != nil {
+		return err
+	}
+	// Match init's pipeline (both now source-relative) so the re-derived
+	// reference has the same tenant-CLI refs and bin/ shape as the real
+	// fork -- otherwise classifyForkEdits flags the rewritten cmd paths
+	// and the dropped bin/<srcLeaf> as spurious fork edits.
+	if err := rewriteTenantCLIRefs(tempTarget, path.Base(srcCueModule), path.Base(cueModule)); err != nil {
+		return err
+	}
+	if err := dropSourceLeafBin(tempTarget, path.Base(srcCueModule), path.Base(cueModule)); err != nil {
 		return err
 	}
 	if err := filterMiseToml(tempTarget); err != nil {
@@ -1557,17 +1661,16 @@ func rederiveExpectedTarget(ctx context.Context, worktreeDir, tempTarget, cueMod
 //     bootstrap creates only if missing; the fork is expected to evolve them
 //     (auth, default-tenant override).
 //
-// Hardcoded fork-tenant name "other" matches the current bootstrap default.
-// When the forks-catalog-field lands (AIDR-00140 carry-forward), derive the
-// fork name from the catalog entry.
-func buildAllowList(claims map[string][]string) map[string]bool {
+// forkName is the fork's leaf tenant, derived by the caller from the
+// target's CUE module (AIDR-00150) -- not hardcoded, so verify of an
+// `another` fork allows the right tenant/<leaf>/ seed paths.
+func buildAllowList(claims map[string][]string, forkName string) map[string]bool {
 	out := make(map[string]bool, 256)
 	for _, paths := range claims {
 		for _, p := range paths {
 			out[p] = true
 		}
 	}
-	const forkName = "other"
 	out[fmt.Sprintf("tenant/%s/catalog/auth.cue", forkName)] = true
 	out[fmt.Sprintf("tenant/%s/catalog/default-tenant.cue", forkName)] = true
 	out[fmt.Sprintf("tenant/%s/infra/mise.toml", forkName)] = true

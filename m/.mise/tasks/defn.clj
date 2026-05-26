@@ -52,7 +52,17 @@
                            "git" "rev-parse" "--show-toplevel")
                   p/check :out str/trim
                   (str "/m"))
-        shard (str root "/kernel/spec/lattice/default_tenant.json")]
+        ;; var/lattice/, NOT the pre-AIDR-00145 kernel/spec/lattice/.
+        ;; This copy of active-tenant drifted from kernel/lib/defn.clj
+        ;; when AIDR-00145 moved the shard to var/ (the two can't share:
+        ;; this task is intentionally library-free, see header). The
+        ;; stale path was masked in the defn repo -- the shard isn't
+        ;; found, the fallback is "defn", and defn IS defn's active
+        ;; tenant -- but in a fork (active tenant "other") the wrong
+        ;; fallback builds the absent //tenant/defn/... and `mise run
+        ;; defn` fails. Surfaced by the AIDR-00150 second lift, the first
+        ;; `mise run defn` in a non-defn-tenant fork.
+        shard (str root "/var/lattice/default_tenant.json")]
     (if-not (fs/exists? shard)
       "defn"
       (let [t (json/parse-string (slurp shard))]

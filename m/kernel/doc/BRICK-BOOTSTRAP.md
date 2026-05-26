@@ -55,8 +55,9 @@ CUE module uses a different package name.
 
 // Package schema defines the BRICK directory classification system.
 //
-// BRICK: Building block, Role, Implementation, Configuration, Kit.
-// Five registers on every platform artifact. See doc/BRICK.md.
+// BRICK is a brand name, not an acronym -- earlier letter expansions
+// drifted and are retired. A brick is any directory with a BUILD.bazel,
+// classified by #BrickKind below. See doc/BRICK.md.
 //
 // Every directory with a BUILD.bazel is a Block, classified as one of:
 //   - relationship: defines how directories connect/validate
